@@ -20,6 +20,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18  # Use Node.js 18 
+        
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # Use Temurin (Adoptium) JDK
+          java-version: '17'      # Use Java 17 (or 11 if required)
+      
       - name: Load environment variables
         run: |
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
