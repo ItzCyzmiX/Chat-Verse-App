@@ -1,0 +1,6 @@
+{
+  "appId": "com.cyzmix.chatverse",
+  "appName": "ChatVerse",
+  "webDir": "build",
+  "bundledWebRuntime": false
+}

@@ -1,0 +1,101 @@
+
+name: Build Android and iOS Binaries
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow on pushes to the main branch
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest  # Use Ubuntu for Android builds
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18  # Use Node.js 18 (or your preferred version)
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Build the SvelteKit app
+      - name: Build SvelteKit app
+        run: npm run build
+
+      # Step 5: Install Capacitor
+      - name: Install Capacitor
+        run: npm install @capacitor/cli @capacitor/core
+
+      # Step 6: Add Android platform
+      - name: Add Android platform
+        run: npx cap add android
+
+      # Step 7: Build the Android app
+      - name: Build Android app
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      # Step 8: Upload APK as artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-ios:
+    runs-on: macos-latest  # Use macOS for iOS builds
+    needs: build-android   # Optional: Run after Android build
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Build the SvelteKit app
+      - name: Build SvelteKit app
+        run: npm run build
+
+      # Step 5: Install Capacitor
+      - name: Install Capacitor
+        run: npm install @capacitor/cli @capacitor/core
+
+      # Step 6: Add iOS platform
+      - name: Add iOS platform
+        run: npx cap add ios
+
+      # Step 7: Build the iOS app
+      - name: Build iOS app
+        run: |
+          cd ios
+          xcodebuild -scheme App -destination 'generic/platform=iOS' -archivePath build/App.xcarchive archive
+
+      # Step 8: Export IPA
+      - name: Export IPA
+        run: |
+          cd ios
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist ExportOptions.plist
+
+      # Step 9: Upload IPA as artifact
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: App.ipa
+          path: ios/build/App.ipa
