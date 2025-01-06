@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import Groq from "groq-sdk";
-import { GROQ_API_KEY } from '$env/static/private'
+//import { GROQ_API_KEY } from '$env/static/private'
 const groq = new Groq(
     {
-        apiKey: GROQ_API_KEY
+        apiKey: import.meta.env.VITE_GROQ_API_KEY
     }
 );
 
