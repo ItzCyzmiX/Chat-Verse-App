@@ -27,6 +27,7 @@
                 showToast = true;
                 toastMessage = error.message;
                 toastType = "error";
+                loading = false;
             } else {
                 goto("/chats");
             }
@@ -40,6 +41,7 @@
                 showToast = true;
                 toastMessage = error.message;
                 toastType = "error";
+                loading = false;
             } else {
                 goto("/chats");
             }
