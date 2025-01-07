@@ -3,24 +3,30 @@
     import { onMount } from "svelte";
     import supabase from "$lib/supabase";
     import groq from "$lib/groq";
+    import { page } from '$app/stores';
 
     let messages = $state([]);
     let newMessage = $state("");
     let showDetails = $state(false);
 
     let botCreator = $state("Unknown Creator");
-    let botName = $state("Unknown Bot");
+    let botName = $page.params.bot;
     let botDescription = $state("Unknown Description");
     let botBehavior = $state("Unknown Behavior");
     let botRelationship = $state("Unknown Relationship");
+
+    let chatContainer;
 
     onMount(async () => {
         let { data, error } = await supabase
             .from("chat_bots")
             .select("*")
             .eq("name", botName);
-        if (error) console.error(error);
-        else {
+        
+        console.log(data)
+        if (error) { 
+            console.error(error);
+        } else {
             botCreator = data[0].creator;
             botDescription = data[0].description;
             botBehavior = data[0].behavior;
@@ -44,7 +50,7 @@
                 {
                     role: "system",
 
-                    content: `your a fictional character named ${bot.name}, with the following personality: ${bot.personality}, your chatting with the user over a social media platform, your relationship with the user is: ${bot.relationship}, act and respond in character `,
+                    content: `your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character `,
                 },
 
                 ...filteredHistory,
@@ -186,7 +192,7 @@
     {/if}
 
     <!-- Chat Messages -->
-    <div class="flex-1 overflow-y-auto p-4">
+    <div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer}>
         <div class="max-w-3xl mx-auto space-y-4 pb-20">
             {#each messages as message}
                 <div
@@ -194,6 +200,9 @@
                         ? 'justify-end'
                         : 'justify-start'}"
                     in:scale
+                    onoutroend={() => {
+                        chatContainer?.scrollTo(0, chatContainer.scrollHeight);
+                    }}
                 >
                     <div
                         class="max-w-[80%] {message.role === 'user'

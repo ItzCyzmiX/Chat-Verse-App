@@ -9,7 +9,7 @@
     let username = $state("");
     let allBots = $state([]);
     let randomBots = $state([]);
-
+    let loading = $state(true);
     onMount(async () => {
         const {
             data: { user },
@@ -19,13 +19,15 @@
             errorMessage = "You are not logged in";
         } else {
             username = user.user_metadata.username;
-            myBots = user.user_metadata.createdBots;
-            allBots = data;
+            myBots = user.user_metadata.createdBots || [];
+            allBots = data || [];
+
             randomBots = allBots.filter((bot) => !myBots.includes(bot.name));
             randomBots = randomBots.slice(0, 4);
-        };
+            loading = false;
+        }
+        loading = false;
     });
-
 </script>
 
 {#if errorMessage}
@@ -236,6 +238,28 @@
                 <div
                     class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6"
                 >
+                    {#if loading}
+                        <div
+                            class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                        >
+                            <div
+                                class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                            ></div>
+                        </div>
+                    {:else if myBots.length === 0}
+                        <div
+                            class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                        >
+                            <span class="p-4 text-center text-zinc-400">
+                                You have no chatbots yet
+                                <a
+                                    href="/new"
+                                    class="text-white underline text-center"
+                                    >Create one!</a
+                                >
+                            </span>
+                        </div>
+                    {/if}
                     {#each myBots as bot}
                         <div
                             class="bg-zinc-800/30 rounded-xl p-4 sm:p-6 transition-all duration-200 hover:bg-zinc-900/30 cursor-pointer border-2 border-white/20"
@@ -271,6 +295,15 @@
                 <div
                     class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6"
                 >
+                    {#if loading}
+                        <div
+                            class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                        >
+                            <div
+                                class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                            ></div>
+                        </div>
+                    {/if}
                     {#each randomBots as bot}
                         <div
                             class="bg-zinc-800/30 rounded-xl p-4 sm:p-6 transition-all duration-200 hover:bg-zinc-900/30 cursor-pointer border-2 border-white/20"

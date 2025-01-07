@@ -1,6 +1,7 @@
 <script>
     import { fade, slide } from "svelte/transition";
     import supabase from "$lib/supabase";
+    import { goto } from "$app/navigation";
 
     let showToast = $state(false);
     let toastMessage = $state("");
@@ -16,6 +17,10 @@
     async function handleSubmit(e) {
         e.preventDefault();
         loading = true;
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        let username = user.user_metadata.username;
         let { data, error } = await supabase.from("chat_bots").insert({
             name: botData.name,
             description: botData.description,
@@ -32,10 +37,8 @@
             toastMessage = "Bot created successfully!";
             toastType = "success";
 
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            let username = user.user_metadata.username;
+
+          
             let prevBots = user.user_metadata.createdBots || [];
             const { data, error } = await supabase.auth.updateUser({
                 data: {
