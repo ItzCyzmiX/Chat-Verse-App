@@ -64,7 +64,7 @@
         <div
             class="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t-2 border-white/20 p-3 flex justify-around items-center sm:hidden z-50"
         >
-            <a href={`/new`} class="flex flex-col items-center text-white">
+            <a href={`/new`} class="flex flex-col items-center text-white/50">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-5 w-5"
@@ -100,7 +100,7 @@
             </a>
             <a
                 href={`/users/${username}`}
-                class="flex flex-col items-center text-white"
+                class="flex flex-col items-center text-white/50"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"

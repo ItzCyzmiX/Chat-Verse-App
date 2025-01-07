@@ -2,18 +2,24 @@
     import { fade, slide } from "svelte/transition";
     import supabase from "$lib/supabase";
     import { goto } from "$app/navigation";
-
+    import {onMount} from "svelte"
     let showToast = $state(false);
     let toastMessage = $state("");
     let toastType = $state("");
     let loading = $state(false);
+    let username = $state('')
     let botData = {
         name: "",
         description: "",
         behavior: "",
         relationship: "",
     };
-
+    onMount(async () => {
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        username = user.user_metadata.username;
+    })
     async function handleSubmit(e) {
         e.preventDefault();
         loading = true;
@@ -104,7 +110,117 @@
             class="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:40px_40px]"
         ></div>
     </div>
+                        <div
+            class="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t-2 border-white/20 p-3 flex justify-around items-center sm:hidden z-50 "
+        >
+            <a href={`/new`} class="flex flex-col items-center text-white">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                    />
+                </svg>
 
+                <span class="text-xs mt-1">New Bot</span>
+            </a>
+            <a href="/chats" class="flex flex-col items-center text-white/50">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path
+                        fill-rule="evenodd"
+                        d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
+                        clip-rule="evenodd"
+                    />
+                </svg>
+
+                <span class="text-xs mt-1">Bots</span>
+            </a>
+            <a
+                href={`/users/${username}`}
+                class="flex flex-col items-center text-white/50"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path
+                        fill-rule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clip-rule="evenodd"
+                    />
+                </svg>
+                <span class="text-xs mt-1">Profile</span>
+            </a>
+        </div>                    <div
+            class="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t-2 border-white/20 p-3 flex justify-around items-center sm:hidden z-50 "
+        >
+            <a href={`/new`} class="flex flex-col items-center text-white">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                    />
+                </svg>
+
+                <span class="text-xs mt-1">New Bot</span>
+            </a>
+            <a href="/chats" class="flex flex-col items-center text-white/50">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path
+                        fill-rule="evenodd"
+                        d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
+                        clip-rule="evenodd"
+                    />
+                </svg>
+
+                <span class="text-xs mt-1">Bots</span>
+            </a>
+            <a
+                href={`/users/${username}`}
+                class="flex flex-col items-center text-white/50"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path
+                        fill-rule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clip-rule="evenodd"
+                    />
+                </svg>
+                <span class="text-xs mt-1">Profile</span>
+            </a>
+        </div>
     <div class="w-full max-w-3xl mx-auto">
         <div class="mb-6 sm:mb-8">
             <h1 class="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">
@@ -183,12 +299,6 @@
             <div
                 class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6"
             >
-                <a
-                    href="/chats"
-                    class="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-800/30 border-2 border-white/20 text-white hover:bg-zinc-800/50 transition-all duration-200 text-center text-sm sm:text-base"
-                >
-                    Cancel
-                </a>
                 <button
                     type="submit"
                     class="w-full sm:w-auto px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-zinc-200 transition-all duration-200 text-sm sm:text-base"
@@ -197,5 +307,6 @@
                 </button>
             </div>
         </form>
+
     </div>
 </div>
