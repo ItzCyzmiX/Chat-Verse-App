@@ -1,3 +1,4 @@
+# THIS IS A PORT OF THE [WEBSITE](https://ai-chat-verse.vercel.app) 
 # ChatVerse
 
 ChatVerse is an interactive AI companion platform where users can engage in conversations with historical figures, fictional characters, or create their own custom AI companions.
@@ -11,7 +12,7 @@ ChatVerse is an interactive AI companion platform where users can engage in conv
 
 ## Getting Started
 
-1. Create a free account at [ChatVerse](https://ai-chat-verse.vercel.app)
+1. Download the latest version of the app [here](https://github.com/ItzCyzmiX/Chat-Verse-App/releases)
 2. Design your custom AI companion by setting their personality traits and backstory
 3. Start chatting and watch your AI companion learn from your interactions
 4. Share your creation with the community or try out other users' bots
@@ -20,7 +21,7 @@ ChatVerse is an interactive AI companion platform where users can engage in conv
 
 - Frontend: SvelteKit
 - Styling: TailwindCSS
-- Deployment: Vercel
+- Mobile Runtime: Capacitor
 - Database: Supabase
 - Authentication: Supabase Auth
 
