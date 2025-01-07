@@ -1,21 +1,34 @@
 <script>
     import { goto } from "$app/navigation";
-
-    let error = $state("");
+    import supabase from "$lib/supabase";
+    import { onMount } from "svelte";
+    let errorMessage = $state("");
     let search = $state("");
     // Mock data for chat bots
-    let data = $props();
-    if (!data.data?.user) {
-        error = "You are not logged in";
-    }
-    let myBots = data.data?.user?.createdBots || [];
-    let username = data.data?.user?.username;
-    let allBots = data.data?.randomBots || [];
-    let randomBots = allBots.filter((bot) => !myBots.includes(bot.name));
-    randomBots = randomBots.slice(0, 4);
+    let myBots = $state([]);
+    let username = $state("");
+    let allBots = $state([]);
+    let randomBots = $state([]);
+
+    onMount(async () => {
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        const { data, error } = await supabase.from("chat_bots").select("*");
+        if (!user?.user_metadata) {
+            errorMessage = "You are not logged in";
+        } else {
+            username = user.user_metadata.username;
+            myBots = user.user_metadata.createdBots;
+            allBots = data;
+            randomBots = allBots.filter((bot) => !myBots.includes(bot.name));
+            randomBots = randomBots.slice(0, 4);
+        };
+    });
+
 </script>
 
-{#if error}
+{#if errorMessage}
     <div
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
     >
@@ -24,7 +37,7 @@
         >
             <div class="text-center">
                 <h2 class="text-3xl text-red-500 font-bold mb-4">404</h2>
-                <p class="text-zinc-400 mb-6">{error}</p>
+                <p class="text-zinc-400 mb-6">{errorMessage}</p>
                 <button
                     class="bg-white text-black px-6 py-2 rounded-lg font-medium hover:bg-zinc-200 transition-colors"
                     onclick={() => goto("/login")}

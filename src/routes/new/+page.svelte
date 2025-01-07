@@ -1,61 +1,96 @@
 <script>
-    import { fade, slide } from 'svelte/transition';
+    import { fade, slide } from "svelte/transition";
+    import supabase from "$lib/supabase";
 
     let showToast = $state(false);
-    let toastMessage = $state('');
-    let toastType = $state('');
+    let toastMessage = $state("");
+    let toastType = $state("");
     let loading = $state(false);
     let botData = {
-        name: '',
-        description: '',
-        behavior: '',
-        relationship: ''
+        name: "",
+        description: "",
+        behavior: "",
+        relationship: "",
     };
 
     async function handleSubmit(e) {
         e.preventDefault();
         loading = true;
-        let res = await fetch('/new', {
-            method: 'POST',
-            body: JSON.stringify(botData)
+        let { data, error } = await supabase.from("chat_bots").insert({
+            name: botData.name,
+            description: botData.description,
+            behavior: botData.behavior,
+            relationship: botData.relationship,
+            creator: username,
         });
-        let data = await res.json();
-        if (data.error) {
+        if (error) {
             showToast = true;
-            toastMessage = 'Failed to create bot';
-            toastType = 'error';
+            toastMessage = error.message;
+            toastType = "error";
         } else {
             showToast = true;
-            toastMessage = 'Bot created successfully!';
-            toastType = 'success';
+            toastMessage = "Bot created successfully!";
+            toastType = "success";
+
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            let username = user.user_metadata.username;
+            let prevBots = user.user_metadata.createdBots || [];
+            const { data, error } = await supabase.auth.updateUser({
+                data: {
+                    createdBots: [
+                        ...prevBots,
+                        {
+                            name: botData.name,
+                            description: botData.description,
+                            behavior: botData.behavior,
+                            relationship: botData.relationship,
+                            creator: username,
+                            createdAt: new Date().toISOString(),
+                        },
+                    ],
+                },
+            });
         }
+
         loading = false;
         setTimeout(() => {
             showToast = false;
-            goto('/chats');
+            goto("/chats");
         }, 3000);
     }
 </script>
-  
 
 {#if loading}
-    <div class="fixed inset-0 bg-transparent flex items-center justify-center z-50" in:slide out:fade>
-        <div class="bg-zinc-800 p-8 rounded-xl border-2 border-white/20 flex flex-col items-center gap-4">
-            <div class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+    <div
+        class="fixed inset-0 bg-transparent flex items-center justify-center z-50"
+        in:slide
+        out:fade
+    >
+        <div
+            class="bg-zinc-800 p-8 rounded-xl border-2 border-white/20 flex flex-col items-center gap-4"
+        >
+            <div
+                class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"
+            ></div>
             <p class="text-white font-medium">Creating your bot...</p>
         </div>
     </div>
 {/if}
 
-    // Toast component
-    {#if showToast}
-        <div
-            transition:fade
-            class="fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg {toastType === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white"
-        >
-            {toastMessage}
-        </div>
-    {/if}
+// Toast component
+{#if showToast}
+    <div
+        transition:fade
+        class="fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg {toastType ===
+        'error'
+            ? 'bg-red-500'
+            : 'bg-green-500'} text-white"
+    >
+        {toastMessage}
+    </div>
+{/if}
 
 <div class="min-h-screen text-white p-4 sm:p-8 {loading ? 'blur-sm' : ''}">
     <div class="fixed inset-0 -z-[11] h-full w-full bg-black">
@@ -69,14 +104,23 @@
 
     <div class="w-full max-w-3xl mx-auto">
         <div class="mb-6 sm:mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Create New Chatbot</h1>
-            <p class="text-zinc-400 text-sm sm:text-base">Design your perfect AI companion by filling out the details below.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">
+                Create New Chatbot
+            </h1>
+            <p class="text-zinc-400 text-sm sm:text-base">
+                Design your perfect AI companion by filling out the details
+                below.
+            </p>
         </div>
 
         <form onsubmit={handleSubmit} class="space-y-4 sm:space-y-6">
             <div class="space-y-4">
                 <div>
-                    <label for="name" class="block text-sm font-medium text-zinc-300 mb-2">Bot Name</label>
+                    <label
+                        for="name"
+                        class="block text-sm font-medium text-zinc-300 mb-2"
+                        >Bot Name</label
+                    >
                     <input
                         type="text"
                         id="name"
@@ -88,7 +132,11 @@
                 </div>
 
                 <div>
-                    <label for="description" class="block text-sm font-medium text-zinc-300 mb-2">Description</label>
+                    <label
+                        for="description"
+                        class="block text-sm font-medium text-zinc-300 mb-2"
+                        >Description</label
+                    >
                     <textarea
                         id="description"
                         bind:value={botData.description}
@@ -99,7 +147,11 @@
                 </div>
 
                 <div>
-                    <label for="behavior" class="block text-sm font-medium text-zinc-300 mb-2">Behavior & Personality</label>
+                    <label
+                        for="behavior"
+                        class="block text-sm font-medium text-zinc-300 mb-2"
+                        >Behavior & Personality</label
+                    >
                     <textarea
                         id="behavior"
                         bind:value={botData.behavior}
@@ -110,7 +162,11 @@
                 </div>
 
                 <div>
-                    <label for="relationship" class="block text-sm font-medium text-zinc-300 mb-2">Relationship with Users</label>
+                    <label
+                        for="relationship"
+                        class="block text-sm font-medium text-zinc-300 mb-2"
+                        >Relationship with Users</label
+                    >
                     <textarea
                         id="relationship"
                         bind:value={botData.relationship}
@@ -121,8 +177,10 @@
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6">
-                <a 
+            <div
+                class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6"
+            >
+                <a
                     href="/chats"
                     class="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-800/30 border-2 border-white/20 text-white hover:bg-zinc-800/50 transition-all duration-200 text-center text-sm sm:text-base"
                 >
