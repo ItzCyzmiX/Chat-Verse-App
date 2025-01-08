@@ -3,7 +3,8 @@
     import { onMount } from "svelte";
     import supabase from "$lib/supabase";
     import groq from "$lib/groq";
-    import { page } from '$app/stores';
+    import { page } from "$app/stores";
+    import {goto } from "$app/navigation"
 
     let messages = $state([]);
     let newMessage = $state("");
@@ -17,14 +18,15 @@
 
     let chatContainer;
 
+    let loadingChats = $state(true)
+
     onMount(async () => {
         let { data, error } = await supabase
             .from("chat_bots")
             .select("*")
             .eq("name", botName);
-        
-        console.log(data)
-        if (error) { 
+
+        if (error) {
             console.error(error);
         } else {
             botCreator = data[0].creator;
@@ -32,6 +34,15 @@
             botBehavior = data[0].behavior;
             botRelationship = data[0].relationship;
         }
+
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user.user_metadata?.messages?.[botName]) {
+            messages = user.user_metadata?.messages?.[botName];
+        }
+        loadingChats = false
     });
     async function handleSubmit(e) {
         e.preventDefault();
@@ -60,13 +71,25 @@
 
             temperature: 0.5,
         });
-        let data = res.choices[0].message.content
+        let data = res.choices[0].message.content;
 
         messages = [
             ...messages,
             { content: data, role: "assistant", timestamp: new Date() },
         ];
+    }
 
+    async function back() {
+        let temp = {};
+        temp[botName] = messages;
+        const { data, error } = await supabase.auth.updateUser({
+            data: {
+                messages: {
+                    ...temp,
+                },
+            },
+        });
+        goto("/chats");
     }
 </script>
 
@@ -86,8 +109,8 @@
     >
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex-1">
-                <a
-                    href="/chats"
+                <button
+                    onclick={back}
                     class="inline-flex items-center text-zinc-400 hover:text-white transition-colors"
                 >
                     <svg
@@ -105,7 +128,7 @@
                         />
                     </svg>
                     <span class="ml-2">Back</span>
-                </a>
+                </button>
             </div>
             <div class="text-center flex-1">
                 <h1 class="text-2xl font-bold text-white">{botName}</h1>
@@ -194,6 +217,15 @@
     <!-- Chat Messages -->
     <div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer}>
         <div class="max-w-3xl mx-auto space-y-4 pb-20">
+            {#if loadingChats}
+            <div
+                class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+            >
+                <div
+                    class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                ></div>
+            </div>
+            {/if}            
             {#each messages as message}
                 <div
                     class="flex {message.role === 'user'
