@@ -4,12 +4,15 @@
     import { onMount } from "svelte";
     let errorMessage = $state("");
     let search = $state("");
-    // Mock data for chat bots
+
     let myBots = $state([]);
     let username = $state("");
     let allBots = $state([]);
+    let lastchated = $state([]);
     let randomBots = $state([]);
+
     let loading = $state(true);
+
     onMount(async () => {
         const {
             data: { user },
@@ -24,6 +27,15 @@
 
             randomBots = allBots.filter((bot) => !myBots.includes(bot.name));
             randomBots = randomBots.slice(0, 4);
+            
+            if (user.user_metadata?.messages) {
+                let lastnames =[]
+                for (let i in user.user_metadata?.messages) {
+                    lastnames.push(i)
+                    
+                }
+                lastchated = allBots.filter((bot) => lastnames.includes(bot.name));
+            }
             loading = false;
         }
         loading = false;
@@ -272,6 +284,66 @@
                             <p class="text-zinc-400 text-xs sm:text-sm">
                                 {bot.description}
                             </p>
+                            <div
+                                class="flex items-center justify-between mt-4 sm:mt-8"
+                            >
+                                <a
+                                    href={`/chat/${bot.name}`}
+                                    class="text-center bg-white font-bold text-black rounded-xl p-3 sm:p-4 cursor-pointer w-full h-fit hover:transform hover:-translate-y-1 hover:shadow-lg hover:shadow-white/20 transition-all duration-200 block text-sm sm:text-base"
+                                >
+                                    chat with <span
+                                        class="underline decoration-2 underline-offset-4"
+                                        >{bot.name}</span
+                                    >
+                                </a>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </section>
+
+            <div class="h-px bg-zinc-700 my-6 sm:my-8"></div>
+            <section class="mb-12">
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4 px-2">
+                    Last Chated With
+                </h2>
+                <div
+                    class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6"
+                >
+                    {#if loading}
+                        <div
+                            class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                        >
+                            <div
+                                class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                            ></div>
+                        </div>
+                    {:else if lastchated === []}
+                        <div
+                            class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                        >
+                            <span class="p-4 text-center text-zinc-400">
+                                You havent chated with any chatbots yet
+                            </span>
+                        </div>
+                    {/if}
+                    {#each lastchated as bot}
+                        <div
+                            class="bg-zinc-800/30 rounded-xl p-4 sm:p-6 transition-all duration-200 hover:bg-zinc-900/30 cursor-pointer border-2 border-white/20"
+                        >
+                            <h3
+                                class="text-xl sm:text-2xl font-bold text-white mb-2"
+                            >
+                                {bot.name}
+                                <span
+                                    class="block text-xs sm:text-sm text-zinc-400 font-medium mt-1"
+                                >
+                                    by {bot.creator}
+                                </span>
+                            </h3>
+                            <p class="text-zinc-400 text-xs sm:text-sm">
+                                {bot.description}
+                            </p>
                             <a
                                 href={`/chat/${bot.name}`}
                                 class="text-center bg-white font-bold text-black rounded-xl p-3 sm:p-4 cursor-pointer w-full h-fit mt-4 sm:mt-8 hover:transform hover:-translate-y-1 hover:shadow-lg hover:shadow-white/20 transition-all duration-200 block text-sm sm:text-base"
@@ -285,9 +357,7 @@
                     {/each}
                 </div>
             </section>
-
             <div class="h-px bg-zinc-700 my-6 sm:my-8"></div>
-
             <section class="mb-12">
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4 px-2">
                     Random

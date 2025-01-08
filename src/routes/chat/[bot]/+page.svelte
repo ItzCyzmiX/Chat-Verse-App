@@ -4,11 +4,12 @@
     import supabase from "$lib/supabase";
     import groq from "$lib/groq";
     import { page } from "$app/stores";
-    import {goto } from "$app/navigation"
+    import { goto } from "$app/navigation";
 
     let messages = $state([]);
     let newMessage = $state("");
     let showDetails = $state(false);
+    let allOldMessages = $state({});
 
     let botCreator = $state("Unknown Creator");
     let botName = $page.params.bot;
@@ -18,7 +19,7 @@
 
     let chatContainer;
 
-    let loadingChats = $state(true)
+    let loadingChats = $state(true);
 
     onMount(async () => {
         let { data, error } = await supabase
@@ -42,7 +43,8 @@
         if (user.user_metadata?.messages?.[botName]) {
             messages = user.user_metadata?.messages?.[botName];
         }
-        loadingChats = false
+        allOldMessages = user.user_metadata?.messages;
+        loadingChats = false;
     });
     async function handleSubmit(e) {
         e.preventDefault();
@@ -79,17 +81,32 @@
         ];
     }
 
-    async function back() {
-        let temp = {};
-        temp[botName] = messages;
-        const { data, error } = await supabase.auth.updateUser({
-            data: {
-                messages: {
-                    ...temp,
+    async function back(reset = false) {
+        let temp = allOldMessages;
+        if (!reset) {
+            temp[botName] = messages;
+
+            const { data, error } = await supabase.auth.updateUser({
+                data: {
+                    messages: {
+                        ...temp,
+                    },
                 },
-            },
-        });
-        goto("/chats");
+            });
+
+            goto("/chats");
+        } else {
+            temp[botName] = [];
+
+            const { data, error } = await supabase.auth.updateUser({
+                data: {
+                    messages: {
+                        ...temp,
+                    },
+                },
+            });
+            window.location.reload()
+        }
     }
 </script>
 
@@ -110,7 +127,7 @@
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex-1">
                 <button
-                    onclick={back}
+                    onclick={() => back(false)}
                     class="inline-flex items-center text-zinc-400 hover:text-white transition-colors"
                 >
                     <svg
@@ -210,6 +227,14 @@
                         brought to you by {botCreator}
                     </p>
                 </div>
+                <button
+                    aria-label="Reset Conversation"
+                    class="bg-red-500/30 border-2 border-red-500 rounded-xl mx-auto px-2 ml-2 py-2 mt-6 text-white hover:bg-red-600/30 transition-all duration-200 w-full text-center"
+                    onclick={() => back(true)}
+                >
+
+                    <span class="font-medium">Reset</span>
+                </button>
             </div>
         </div>
     {/if}
@@ -218,14 +243,14 @@
     <div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer}>
         <div class="max-w-3xl mx-auto space-y-4 pb-20">
             {#if loadingChats}
-            <div
-                class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
-            >
                 <div
-                    class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
-                ></div>
-            </div>
-            {/if}            
+                    class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                >
+                    <div
+                        class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                    ></div>
+                </div>
+            {/if}
             {#each messages as message}
                 <div
                     class="flex {message.role === 'user'
