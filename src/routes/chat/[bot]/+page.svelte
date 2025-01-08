@@ -105,7 +105,7 @@
                     },
                 },
             });
-            window.location.reload()
+            window.location.reload();
         }
     }
 </script>
@@ -232,8 +232,7 @@
                     class="bg-red-500/30 border-2 border-red-500 rounded-xl mx-auto px-2 ml-2 py-2 mt-6 text-white hover:bg-red-600/30 transition-all duration-200 w-full text-center"
                     onclick={() => back(true)}
                 >
-
-                    <span class="font-medium">Reset</span>
+                    <span class="font-medium">Reset Chat</span>
                 </button>
             </div>
         </div>
