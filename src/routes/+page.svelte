@@ -5,6 +5,7 @@ import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 let userState = $state('loading');
 
+
 // Check auth state on mount
 onMount(async () => {
     const {

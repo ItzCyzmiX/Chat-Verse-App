@@ -17,6 +17,8 @@
     let botBehavior = $state("Unknown Behavior");
     let botRelationship = $state("Unknown Relationship");
 
+    let botThinking = $state(false);
+
     let chatContainer;
 
     let loadingChats = $state(true);
@@ -44,10 +46,16 @@
             messages = user.user_metadata?.messages?.[botName];
         }
         allOldMessages = user.user_metadata?.messages;
+        
         loadingChats = false;
+        chatContainer.scrollIntoVeiw({
+            behavior: 'smooth',
+            block: 'end'
+        })
     });
     async function handleSubmit(e) {
         e.preventDefault();
+        botThinking = true;
         let temp = newMessage;
         newMessage = "";
         messages = [
@@ -73,40 +81,41 @@
 
             temperature: 0.5,
         });
-        let data = res.choices[0].message.content;
-
+        let response = res.choices[0].message.content;
+        botThinking = false;
         messages = [
             ...messages,
-            { content: data, role: "assistant", timestamp: new Date() },
+            { content: response, role: "assistant", timestamp: new Date() },
         ];
+
+        chatContainer.scrollTop = chatContainer.scrollHeight
+        
+        let temp_ = allOldMessages || {};
+        temp_[botName] = messages;
+
+        const { data, error } = await supabase.auth.updateUser({
+            data: {
+                messages: {
+                    ...temp_,
+                },
+            },
+        });
+        
     }
 
-    async function back(reset = false) {
-        let temp = allOldMessages;
-        if (!reset) {
-            temp[botName] = messages;
+    async function reset() {
+        let temp = allOldMessages || {};
 
-            const { data, error } = await supabase.auth.updateUser({
-                data: {
-                    messages: {
-                        ...temp,
-                    },
+        temp[botName] = [];
+
+        const { data, error } = await supabase.auth.updateUser({
+            data: {
+                messages: {
+                    ...temp,
                 },
-            });
-
-            goto("/chats");
-        } else {
-            temp[botName] = [];
-
-            const { data, error } = await supabase.auth.updateUser({
-                data: {
-                    messages: {
-                        ...temp,
-                    },
-                },
-            });
-            window.location.reload();
-        }
+            },
+        });
+        window.location.reload();
     }
 </script>
 
@@ -126,8 +135,8 @@
     >
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex-1">
-                <button
-                    onclick={() => back(false)}
+                <a
+                    href="/chats"
                     class="inline-flex items-center text-zinc-400 hover:text-white transition-colors"
                 >
                     <svg
@@ -145,7 +154,7 @@
                         />
                     </svg>
                     <span class="ml-2">Back</span>
-                </button>
+                </a>
             </div>
             <div class="text-center flex-1">
                 <h1 class="text-2xl font-bold text-white">{botName}</h1>
@@ -240,7 +249,7 @@
 
     <!-- Chat Messages -->
     <div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer}>
-        <div class="max-w-3xl mx-auto space-y-4 pb-20">
+        <div  class="max-w-3xl mx-auto space-y-4 pb-20" > 
             {#if loadingChats}
                 <div
                     class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
@@ -256,9 +265,6 @@
                         ? 'justify-end'
                         : 'justify-start'}"
                     in:scale
-                    onoutroend={() => {
-                        chatContainer?.scrollTo(0, chatContainer.scrollHeight);
-                    }}
                 >
                     <div
                         class="max-w-[80%] {message.role === 'user'
@@ -278,6 +284,27 @@
                     </div>
                 </div>
             {/each}
+            {#if botThinking}
+                <div
+                    class="flex justify-start"
+                    in:scale
+                >
+                    <div
+                        class="max-w-[80%] bg-zinc-800/30 rounded-xl p-4 border-2 border-white/20"
+                    >
+                        <div
+                            class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
+                        >
+                            <div
+                                class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                            ></div>
+                            <p class="ml-3 text-white font-medium">
+                                {botName} is thinking...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {/if}
         </div>
     </div>
 
@@ -288,14 +315,16 @@
         <div class="max-w-3xl mx-auto">
             <form onsubmit={handleSubmit} class="flex gap-4">
                 <input
+                    disabled={botThinking}
                     type="text"
                     bind:value={newMessage}
-                    placeholder="Type your message..."
+                    placeholder={botThinking ? `${botName} is typing...` : "Type your message..."}
                     class="flex-1 bg-zinc-900/50 border-2 border-white/20 rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 shadow-lg"
                 />
                 <button
+                    disabled={botThinking}
                     type="submit"
-                    class="bg-white font-bold text-black px-6 py-2 rounded-xl font-medium transition-colors hover:bg-zinc-200"
+                    class="bg-white font-bold text-black px-6 py-2 rounded-xl font-medium transition-colors hover:bg-zinc-200 disabled:bg-gray-400 disabled:text-gray-800"
                 >
                     Send
                 </button>
