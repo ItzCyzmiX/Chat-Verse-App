@@ -11,17 +11,21 @@
     let showDetails = $state(false);
     let allOldMessages = $state({});
 
+    let username = $state('')
     let botCreator = $state("Unknown Creator");
     let botName = $page.params.bot;
     let botDescription = $state("Unknown Description");
     let botBehavior = $state("Unknown Behavior");
     let botRelationship = $state("Unknown Relationship");
-
+    let botGreeting = $state('')
+    
     let botThinking = $state(false);
 
     let chatContainer;
 
     let loadingChats = $state(true);
+
+    let reseting = $state(false)
 
     onMount(async () => {
         let { data, error } = await supabase
@@ -36,14 +40,25 @@
             botDescription = data[0].description;
             botBehavior = data[0].behavior;
             botRelationship = data[0].relationship;
+            botGreeting = data[0]?.greeting || ''
         }
-
+        
         const {
             data: { user },
         } = await supabase.auth.getUser();
-
+        
+        username = user.user_metadata.username
+        
         if (user.user_metadata?.messages?.[botName]) {
             messages = user.user_metadata?.messages?.[botName];
+        } else {
+            if (botGreeting) {
+                messages.push({
+                    role: "assistant",
+                    content: botGreeting,
+                    timestamp: new Date()
+                })
+            }
         }
         allOldMessages = user.user_metadata?.messages;
         
@@ -71,7 +86,8 @@
                 {
                     role: "system",
 
-                    content: `your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character `,
+                    content: `your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character, keep the conversation hype and flowing, yet make the responses short, if needed, and effective like a real person `,
+                     
                 },
 
                 ...filteredHistory,
@@ -104,6 +120,7 @@
     }
 
     async function reset() {
+        reseting = true
         let temp = allOldMessages || {};
 
         temp[botName] = [];
@@ -239,9 +256,19 @@
                 <button
                     aria-label="Reset Conversation"
                     class="bg-red-500/30 border-2 border-red-500 rounded-xl mx-auto px-2 ml-2 py-2 mt-6 text-white hover:bg-red-600/30 transition-all duration-200 w-full text-center"
-                    onclick={() => back(true)}
+                    onclick={reset}
                 >
-                    <span class="font-medium">Reset Chat</span>
+                    
+                    <span class="font-medium flex justify-center">
+                        {reseting ? "Reseting..." :"Reset Chat" }
+                        
+                        {#if reseting}
+                            <div
+                        class="ml-4 w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                    ></div>
+                
+                        {/if}
+                    </span>
                 </button>
             </div>
         </div>
@@ -271,12 +298,21 @@
                             ? 'bg-white'
                             : 'bg-zinc-800/30'} rounded-xl p-4 border-2 border-white/20"
                     >
-                        <p
+                        <p class="">
+                        {#if message.role !== 'user'}
+                            <span class="text-lg text-gray-400">
+                            {botName}:
+                            </span>
+                        {/if}
+                        
+                        <span
                             class="{message.role === 'user'
                                 ? 'text-black'
                                 : 'text-white'} font-medium"
                         >
                             {message.content}
+                        </span>
+                        
                         </p>
                         <p class="text-xs text-zinc-400 mt-1">
                             {new Date(message.timestamp).toLocaleTimeString()}

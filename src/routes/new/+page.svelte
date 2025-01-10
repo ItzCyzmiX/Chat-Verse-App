@@ -13,6 +13,7 @@
         description: "",
         behavior: "",
         relationship: "",
+        greeting: ""
     };
     onMount(async () => {
         const {
@@ -33,6 +34,7 @@
             behavior: botData.behavior,
             relationship: botData.relationship,
             creator: username,
+            greeting: botData.greeting || ''
         });
         if (error) {
             showToast = true;
@@ -64,10 +66,12 @@
         }
 
         loading = false;
-        setTimeout(() => {
-            showToast = false;
-            goto("/chats");
-        }, 3000);
+        if (toastType !== "error") {
+            setTimeout(() => {
+                showToast = false;
+                goto("/chats");
+            }, 1000);
+        }
     }
 </script>
 
@@ -292,6 +296,20 @@
                         placeholder="How should the bot relate to users? (e.g. friendly mentor, curious student)... step sister? go wild idc"
                         class="w-full bg-zinc-800/30 border-2 border-white/20 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 h-28 sm:h-32 text-sm sm:text-base"
                         required
+                    ></textarea>
+                </div>
+                <div>
+                    <label
+                        for="greeting"
+                        class="block text-sm font-medium text-zinc-300 mb-2"
+                        >Greeting Message</label
+                    >
+                    <textarea
+                        id="relationship"
+                        bind:value={botData.greeting}
+                        placeholder="How is the bot going to greet the user? (optional)"
+                        class="w-full bg-zinc-800/30 border-2 border-white/20 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 h-28 sm:h-32 text-sm sm:text-base"
+                        
                     ></textarea>
                 </div>
             </div>
