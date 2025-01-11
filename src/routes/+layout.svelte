@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from "svelte";
+	import { fly } from "svelte/transition";
 	import "../app.css";
 	import { App } from "@capacitor/app";
 	let { children } = $props();
@@ -8,7 +9,10 @@
 
 	onMount(() => {
 		App.addListener("backButton", (e) => {
-			if (window.history.state && window.history.state.idx > 0) {
+			if (showPopUp) {
+				App.exitApp()
+			} 
+			if (window.history.length > 1) {
 				window.history.back();
 			} else {
 				showPopUp = true;
@@ -24,7 +28,7 @@
 {#if showPopUp}
 	<div
 		class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"
-		transition:scale
+		transition:fly
 	>
 		<div
 			class="bg-zinc-900 border-2 border-white/20 rounded-xl p-8 max-w-md w-full mx-4"
