@@ -10,8 +10,8 @@
 	onMount(() => {
 		App.addListener("backButton", (e) => {
 			if (showPopUp) {
-				App.exitApp()
-			} 
+				App.exitApp();
+			}
 			if (window.history.length > 1) {
 				window.history.back();
 			} else {
@@ -27,7 +27,7 @@
 
 {#if showPopUp}
 	<div
-		class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"
+		class="fixed inset-0 bg-black z-50 flex items-center justify-center backdrop-blur-sm"
 		transition:fly
 	>
 		<div
@@ -67,11 +67,10 @@
 			</button>
 		</div>
 	</div>
-{:else}
-	<div>
-		{@render children()}
-	</div>
 {/if}
+<div>
+	{@render children()}
+</div>
 
 <style>
 	:global(body) {
