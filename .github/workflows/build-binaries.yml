@@ -42,12 +42,15 @@ jobs:
 
       # Step 5: Install Capacitor
       - name: Install Capacitor
-        run: npm install @capacitor/cli @capacitor/core
+        run: npm install @capacitor/cli @capacitor/core @capacitor/app @capacitor/assets
 
       # Step 6: Add Android platform
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Add icons 
+        run: npx capacitor-assets generate --android
+      
       # Step 7: Build the Android app
       - name: Build Android app
         run: |
