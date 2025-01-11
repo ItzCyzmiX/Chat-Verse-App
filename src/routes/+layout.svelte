@@ -50,22 +50,24 @@
 						/>
 					</svg>
 				</button>
+				<h1 class="text-3xl font-bold text-white">
+					Do you want to exit Chatverse?
+				</h1>
 			</div>
 			<button
 				aria-label="Close app"
 				class="bg-red-500/30 border-2 border-red-500 rounded-xl mx-auto px-2 ml-2 py-2 mt-6 text-white hover:bg-red-600/30 transition-all duration-200 w-full text-center"
 				onclick={close}
 			>
-				<span class="font-medium flex justify-center">
-					Close the app?
-				</span>
+				<span class="font-medium flex justify-center"> Close </span>
 			</button>
 		</div>
 	</div>
+{:else}
+	<div>
+		{@render children()}
+	</div>
 {/if}
-<div class:blur-sm={showPopUp}>
-	{@render children()}
-</div>
 
 <style>
 	:global(body) {
