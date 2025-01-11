@@ -1,4 +1,3 @@
-# THIS IS A PORT OF THE [WEBSITE](https://ai-chat-verse.vercel.app) 
 # ChatVerse
 
 ChatVerse is an interactive AI companion platform where users can engage in conversations with historical figures, fictional characters, or create their own custom AI companions.
