@@ -61,12 +61,11 @@
             }
         }
         allOldMessages = user.user_metadata?.messages;
-        
+
         loadingChats = false;
-        chatContainer.scrollIntoVeiw({
-            behavior: 'smooth',
-            block: 'end'
-        })
+
+        chatContainer.scrollTop = chatContainer.scrollHeight
+        
     });
     async function handleSubmit(e) {
         e.preventDefault();
@@ -77,7 +76,7 @@
             ...messages,
             { content: temp, role: "user", timestamp: new Date() },
         ];
-
+        chatContainer.scrollTop = chatContainer.scrollHeight
         let filteredHistory = messages.map(
             ({ ["timestamp"]: _, ...rest }) => rest,
         );
@@ -116,7 +115,7 @@
                 },
             },
         });
-        
+
     }
 
     async function reset() {
@@ -275,8 +274,8 @@
     {/if}
 
     <!-- Chat Messages -->
-    <div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer}>
-        <div  class="max-w-3xl mx-auto space-y-4 pb-20" > 
+    <div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer} >
+        <div  class="max-w-3xl mx-auto space-y-4 pb-20"  > 
             {#if loadingChats}
                 <div
                     class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"

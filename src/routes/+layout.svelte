@@ -14,10 +14,7 @@
 			}
 			if (
 				window.history.length > 1 &&
-				!window.location.pathname.includes("chat") &&
-				!window.location.pathname.includes("chats") &&
-				!window.location.pathname.includes("users") &&
-				!window.location.pathname.includes("new")
+				window.location.pathname.includes("chat")
 			) {
 				window.history.back();
 			} else {
