@@ -1,5 +1,5 @@
 # NOTICE:
-I have change the way the messages are stored and in doing so, i deleted every account (with their messages), im sorry about that, but from now on this system looks pretty good and i wont change it! So for eveyone who lost their account on this migration im deeply sorry! hope you still use the app :) (for more about the nerdy stuff of why this migration even happened read [this](https://github.com/ItzCyzmiX/Chat-Verse-App/main/MIGRATION.md))
+I have change the way the messages are stored and in doing so, i deleted every account (with their messages), im sorry about that, but from now on this system looks pretty good and i wont change it! So for eveyone who lost their account on this migration im deeply sorry! hope you still use the app :) (for more about the nerdy stuff of why this migration even happened read [this](https://github.com/ItzCyzmiX/Chat-Verse-App/blob/main/MIGRATION.md))
 
 # ChatVerse
 
