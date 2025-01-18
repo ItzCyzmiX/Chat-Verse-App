@@ -109,7 +109,9 @@
 		}
 	}
 </script>
-
+<svelte:head>
+	<title>Bring your character to life!</title>
+</svelte:head>
 {#if loading}
 	<div
 		class="fixed inset-0 bg-transparent flex items-center justify-center z-50"

@@ -18,7 +18,9 @@ onMount(async () => {
     }
 });
 </script>
-
+<svelte:head>
+    <title>Chatverse</title>
+</svelte:head>
 {#if userState === 'loading'}
     <div class="min-h-screen flex items-center justify-center text-white p-4 relative" transition:fade>
         <div class="fixed inset-0 -z-[11] h-full w-full bg-black">

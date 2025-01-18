@@ -29,7 +29,9 @@
         }
     }
 </script>
-
+<svelte:head>
+	<title>{userData.username}</title>
+</svelte:head>
 <div class="min-h-screen text-white p-4 sm:p-8">
     <div class="fixed inset-0 -z-[11] h-full w-full bg-black">
         <div

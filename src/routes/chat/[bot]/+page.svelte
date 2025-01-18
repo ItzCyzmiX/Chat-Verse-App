@@ -11,6 +11,7 @@
 	let showDetails = $state(false);
 	let allOldMessages = $state({});
 
+	let USER_ID = $state("");
 	let username = $state("");
 	let botCreator = $state("Unknown Creator");
 	let botName = $page.params.bot;
@@ -32,14 +33,14 @@
 	let shouldAutoScroll = true;
 
 	// Function to scroll to bottom
-	const scrollToBottom = (type="smooth") => {
+	const scrollToBottom = (type = "smooth") => {
 		if (!chatContainer) return;
 
 		const shouldSmooth =
 			document.body.clientHeight - window.innerHeight > 100;
 		chatContainer.scrollTo({
 			top: chatContainer.scrollHeight,
-			behavior: type
+			behavior: type,
 		});
 	};
 
@@ -79,21 +80,28 @@
 		const {
 			data: { user },
 		} = await supabase.auth.getUser();
-
+		USER_ID = user.id;
 		username = user.user_metadata.username;
+		{
+			const res = await supabase
+				.from("messages")
+				.select("*")
+				.eq("user_id", user.id)
+				.single();
 
-		if (user.user_metadata?.messages?.[botName]) {
-			messages = user.user_metadata?.messages?.[botName];
-		} else {
-			if (botGreeting) {
-				messages.push({
-					role: "assistant",
-					content: botGreeting,
-					timestamp: new Date(),
-				});
+			if (res.data?.msg_json?.messages?.[botName]) {
+				messages = res.data.msg_json?.messages?.[botName];
+			} else {
+				if (botGreeting) {
+					messages.push({
+						role: "assistant",
+						content: botGreeting,
+						timestamp: new Date(),
+					});
+				}
 			}
+			allOldMessages = res.data?.msg_json?.messages || {};
 		}
-		allOldMessages = user.user_metadata?.messages;
 
 		loadingChats = false;
 
@@ -136,14 +144,19 @@
 		];
 		let temp_ = allOldMessages || {};
 		temp_[botName] = messages;
-
-		const { data, error } = await supabase.auth.updateUser({
-			data: {
-				messages: {
-					...temp_,
+		
+		const { data, error } = await supabase
+			.from("messages")
+			.update({
+				msg_json: {
+					messages: {
+						...temp_,
+					},
 				},
-			},
-		});
+			})
+			.eq("user_id", USER_ID)
+			.select();
+
 		scrollToBottom();
 	}
 
@@ -153,17 +166,24 @@
 
 		temp[botName] = [];
 
-		const { data, error } = await supabase.auth.updateUser({
-			data: {
-				messages: {
-					...temp,
+		const { data, error } = await supabase
+			.from("messages")
+			.update({
+				msg_json: {
+					messages: {
+						...temp,
+					},
 				},
-			},
-		});
+			})
+			.eq("user_id", USER_ID)
+			.select();
+
 		window.location.reload();
 	}
 </script>
-
+<svelte:head>
+	<title>Chatting with {botName}</title>
+</svelte:head>
 <div class="h-screen flex flex-col">
 	<div class="fixed inset-0 -z-[10] h-full w-full bg-black">
 		<div
@@ -202,7 +222,9 @@
 				</a>
 			</div>
 			<div class="text-center flex-1">
-				<h1 class="text-2xl font-bold text-white">{botName}</h1>
+				<h1 class="lg:text-2xl md:text-sm font-bold text-white">
+					{botName}
+				</h1>
 				<p class="text-sm text-zinc-400">Created by {botCreator}</p>
 			</div>
 			<div class="flex-1 flex justify-end">
@@ -237,7 +259,7 @@
 			transition:scale
 		>
 			<div
-				class="bg-zinc-900 border-2 border-white/20 rounded-xl p-8 max-w-md w-full mx-4"
+				class="bg-zinc-900 border-2 border-white/20 rounded-xl p-8 max-w-md w-full mx-4 sm:text-sm"
 			>
 				<div class="flex justify-between items-start mb-6">
 					<h2 class="text-2xl font-bold text-white">
@@ -330,7 +352,9 @@
 					>
 						<p class="">
 							{#if message.role !== "user"}
-								<span class="text-lg text-gray-400">
+								<span
+									class="lg:text-lg md:text-sm text-gray-400"
+								>
 									{botName}:
 								</span>
 							{/if}
@@ -338,7 +362,7 @@
 							<span
 								class="{message.role === 'user'
 									? 'text-black'
-									: 'text-white'} font-medium"
+									: 'text-white'} font-medium text-sm sm:text-base"
 							>
 								{message.content}
 							</span>
