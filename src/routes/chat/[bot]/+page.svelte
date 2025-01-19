@@ -93,9 +93,13 @@
 
 			try {
 				if (res.data?.msg_json?.messages?.[botId].length > 0) {
+					
 					messages = res.data.msg_json?.messages?.[botId];
+				} else {
+					throw Error
 				}
 			} catch {
+				alert('nigg')
 				if (botGreeting) {
 					messages.push({
 						role: "assistant",
