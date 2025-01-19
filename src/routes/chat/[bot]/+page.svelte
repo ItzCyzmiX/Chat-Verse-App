@@ -154,7 +154,7 @@
 
 			model: "llama-3.3-70b-versatile",
 
-			temperature: 0.5,
+			temperature: 1,
 		});
 		let response = res.choices[0].message.content;
 		botThinking = false;
