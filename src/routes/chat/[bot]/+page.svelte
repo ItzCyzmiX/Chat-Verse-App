@@ -198,7 +198,7 @@
 			.eq("user_id", USER_ID)
 			.select();
 
-		window.location.reload();
+		await goto(`/chat/${botId}`, { invalidateAll: true })
 	}
 </script>
 
