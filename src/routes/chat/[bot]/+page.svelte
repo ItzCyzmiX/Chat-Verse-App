@@ -198,7 +198,7 @@
 			.eq("user_id", USER_ID)
 			.select();
 
-		await goto(`/chat/${botId}`, { invalidateAll: true })
+		window.location.href = `/chat/${botId}`
 	}
 </script>
 
