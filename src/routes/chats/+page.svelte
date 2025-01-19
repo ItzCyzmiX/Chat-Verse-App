@@ -18,39 +18,43 @@
 			data: { user, error },
 		} = await supabase.auth.getUser();
 
-		console.log(user, error)
-	
 		if (!user?.user_metadata) {
 			errorMessage = "You are not logged in";
 		} else {
 			const { data, error } = await supabase
 				.from("chat_bots")
 				.select("*");
-			
-			username = user.user_metadata.username;
-			myBots = user.user_metadata.createdBots || [];
+
 			allBots = data || [];
+			username = user.user_metadata.username;
+			let myBots_names = user.user_metadata.createdBots || [];
+			myBots_names = myBots_names.map((bot) => {
+				return bot.name;
+			});
+			myBots = allBots.filter((bot) => myBots_names.includes(bot.name));
 
 			randomBots = allBots.filter((bot) => !myBots.includes(bot.name));
 			randomBots = randomBots.slice(0, 4);
 			{
-				
 				const res = await supabase
-				.from("messages")
-				.select("*")
-				.eq("user_id", user.id)
-				.single()
+					.from("messages")
+					.select("*")
+					.eq("user_id", user.id)
+					.single();
 
-				
-				
 				if (res.data?.msg_json.messages) {
 					let lastnames = [];
 					for (let i in res.data?.msg_json.messages) {
+						
 						lastnames.push(i);
 					}
+
+					
+					
 					lastchated = allBots.filter((bot) =>
-						lastnames.includes(bot.name),
+						lastnames.includes(bot.id)
 					);
+					console.log(lastnames,lastchated)
 				}
 			}
 
@@ -61,7 +65,7 @@
 </script>
 
 <svelte:head>
-	<title>Chatvers</title>
+	<title>Chatverse</title>
 </svelte:head>
 
 {#if errorMessage}
@@ -310,7 +314,7 @@
 								class="flex items-center justify-between mt-4 sm:mt-8"
 							>
 								<a
-									href={`/chat/${bot.name}`}
+									href={`/chat/${bot.id}`}
 									class="text-center bg-white font-bold text-black rounded-xl p-3 sm:p-4 cursor-pointer w-full h-fit hover:transform hover:-translate-y-1 hover:shadow-lg hover:shadow-white/20 transition-all duration-200 block text-sm sm:text-base"
 								>
 									chat with <span
@@ -367,7 +371,7 @@
 								{bot.description}
 							</p>
 							<a
-								href={`/chat/${bot.name}`}
+								href={`/chat/${bot.id}`}
 								class="text-center bg-white font-bold text-black rounded-xl p-3 sm:p-4 cursor-pointer w-full h-fit mt-4 sm:mt-8 hover:transform hover:-translate-y-1 hover:shadow-lg hover:shadow-white/20 transition-all duration-200 block text-sm sm:text-base"
 							>
 								chat with <span
@@ -414,7 +418,7 @@
 								{bot.description}
 							</p>
 							<a
-								href={`/chat/${bot.name}`}
+								href={`/chat/${bot.id}`}
 								class="text-center bg-white font-bold text-black rounded-xl p-3 sm:p-4 cursor-pointer w-full h-fit mt-4 sm:mt-8 hover:transform hover:-translate-y-1 hover:shadow-lg hover:shadow-white/20 transition-all duration-200 block text-sm sm:text-base"
 							>
 								chat with <span

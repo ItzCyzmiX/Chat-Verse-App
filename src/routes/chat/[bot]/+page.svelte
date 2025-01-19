@@ -14,7 +14,8 @@
 	let USER_ID = $state("");
 	let username = $state("");
 	let botCreator = $state("Unknown Creator");
-	let botName = $page.params.bot;
+	let botId = $page.params.bot;
+	let botName = $state("");
 	let botDescription = $state("Unknown Description");
 	let botBehavior = $state("Unknown Behavior");
 	let botRelationship = $state("Unknown Relationship");
@@ -65,11 +66,12 @@
 		let { data, error } = await supabase
 			.from("chat_bots")
 			.select("*")
-			.eq("name", botName);
+			.eq("id", botId);
 
 		if (error) {
 			console.error(error);
 		} else {
+			botName = data[0].name;
 			botCreator = data[0].creator;
 			botDescription = data[0].description;
 			botBehavior = data[0].behavior;
@@ -89,9 +91,11 @@
 				.eq("user_id", user.id)
 				.single();
 
-			if (res.data?.msg_json?.messages?.[botName]) {
-				messages = res.data.msg_json?.messages?.[botName];
-			} else {
+			try {
+				if (res.data?.msg_json?.messages?.[botId].length > 0) {
+					messages = res.data.msg_json?.messages?.[botId];
+				}
+			} catch {
 				if (botGreeting) {
 					messages.push({
 						role: "assistant",
@@ -100,6 +104,18 @@
 					});
 				}
 			}
+
+			// if (res.data?.msg_json?.messages?.[botId].length > 0) {
+			// 	messages = res.data.msg_json?.messages?.[botId];
+			// } else {
+			// 	if (botGreeting) {
+			// 		messages.push({
+			// 			role: "assistant",
+			// 			content: botGreeting,
+			// 			timestamp: new Date(),
+			// 		});
+			// 	}
+			// }
 			allOldMessages = res.data?.msg_json?.messages || {};
 		}
 
@@ -143,8 +159,8 @@
 			{ content: response, role: "assistant", timestamp: new Date() },
 		];
 		let temp_ = allOldMessages || {};
-		temp_[botName] = messages;
-		
+		temp_[botId] = messages;
+
 		const { data, error } = await supabase
 			.from("messages")
 			.update({
@@ -164,7 +180,7 @@
 		reseting = true;
 		let temp = allOldMessages || {};
 
-		temp[botName] = [];
+		temp[botId] = [];
 
 		const { data, error } = await supabase
 			.from("messages")
@@ -181,6 +197,7 @@
 		window.location.reload();
 	}
 </script>
+
 <svelte:head>
 	<title>Chatting with {botName}</title>
 </svelte:head>
@@ -288,7 +305,7 @@
 				</div>
 				<div class="space-y-4">
 					<div>
-						<h3 class="text-zinc-400 text-sm">Personality</h3>
+						<h3 class="text-zinc-400 text-sm">Description</h3>
 						<p class="text-white">{botDescription}</p>
 					</div>
 					<div>
