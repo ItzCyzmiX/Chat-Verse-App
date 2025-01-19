@@ -99,7 +99,7 @@
 					throw Error
 				}
 			} catch {
-				alert('nigg')
+			
 				if (botGreeting) {
 					messages.push({
 						role: "assistant",
