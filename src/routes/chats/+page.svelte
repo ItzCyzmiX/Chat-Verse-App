@@ -240,7 +240,7 @@
 									.toLowerCase()
 									.includes(search.toLowerCase())}
 									<a
-										href={`/chat/${bot.name}`}
+										href={`/chat/${bot.id}`}
 										class="flex items-center gap-3 p-3 hover:bg-zinc-700/50 transition-colors"
 									>
 										<div
