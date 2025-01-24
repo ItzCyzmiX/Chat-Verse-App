@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/chat/:bot", "destination": "/chat/[bot]" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}

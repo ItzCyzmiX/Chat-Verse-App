@@ -154,7 +154,7 @@
 
 			model: "llama-3.3-70b-versatile",
 
-			temperature: 0.5,
+			temperature: 1,
 		});
 		let response = res.choices[0].message.content;
 		botThinking = false;
@@ -198,7 +198,7 @@
 			.eq("user_id", USER_ID)
 			.select();
 
-		window.location.reload();
+		window.location.href = `/chat/${botId}`
 	}
 </script>
 
