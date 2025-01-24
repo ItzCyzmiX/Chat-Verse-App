@@ -3,6 +3,7 @@
 	import { browser } from "$app/environment";
 	import supabase from "$lib/supabase";
 	import { goto } from "$app/navigation";
+	import { page } from "$app/stores";
 	import { onMount } from "svelte";
 	let showToast = $state(false);
 	let toastMessage = $state("");
@@ -18,6 +19,7 @@
 		avatarColor: "#4F46E5",
 	});
 
+	let id = $page.params.id;
 	let isMobile = $state(false);
 
 	// Check if device is mobile on client side
@@ -33,10 +35,21 @@
 		window.addEventListener("resize", checkMobile);
 	}
 	onMount(async () => {
+		loading = true;
 		const {
 			data: { user },
 		} = await supabase.auth.getUser();
 		username = user.user_metadata.username;
+		const { data, error } = await supabase.from("chat_bots").select("*").eq("id", id);
+		if (error) {
+			showToast = true;
+			toastMessage = "This bot does not exist!";
+			toastType = "error";
+
+		} else {
+			botData = data[0];
+		}
+		loading = false;
 	});
 
 	let activeTab = $state("basic");
@@ -65,21 +78,21 @@
 			data: { user },
 		} = await supabase.auth.getUser();
 		let username = user.user_metadata.username;
-		let { data, error } = await supabase.from("chat_bots").insert({
+		let { data, error } = await supabase.from("chat_bots").update({
 			name: botData.name,
 			description: botData.description,
 			behavior: botData.behavior,
 			relationship: botData.relationship,
 			creator: username,
 			greeting: botData.greeting || "",
-		});
+		}).eq("id", id).select();
 		if (error) {
 			showToast = true;
 			toastMessage = error.message;
 			toastType = "error";
 		} else {
 			showToast = true;
-			toastMessage = "Bot created successfully!";
+			toastMessage = "Bot updated successfully!";
 			toastType = "success";
 
 			let prevBots = user.user_metadata.createdBots || [];
@@ -124,7 +137,7 @@
 			<div
 				class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"
 			></div>
-			<p class="text-white font-medium">Creating your bot...</p>
+			<p class="text-white font-medium px-16 text-center">Getting your bot's data...</p>
 		</div>
 	</div>
 {/if}
@@ -469,7 +482,7 @@
 									class="px-6 py-3 rounded-lg bg-white text-black font-medium hover:bg-zinc-200 transition-all duration-200"
 								>
 									{activeTab === "preveiw"
-										? "Create Bot"
+										? "Edit Bot"
 										: "Next"}
 								</button>
 							</div>
@@ -642,7 +655,7 @@
 									>
 										{activeTab === "basic"
 											? "Next"
-											: "Create Bot"}
+											: "Edit Bot"}
 									</button>
 								</div>
 							</form>
