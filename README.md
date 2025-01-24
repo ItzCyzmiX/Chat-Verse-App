@@ -13,11 +13,10 @@ ChatVerse is an interactive AI companion platform where users can engage in conv
 - **Community Sharing**: Share your AI companions with others or discover bots created by the community
 
 ## Getting Started
-
-1. Download the latest version of the app [here](https://github.com/ItzCyzmiX/Chat-Verse-App/releases)
-2. Design your custom AI companion by setting their personality traits and backstory
-3. Start chatting and watch your AI companion learn from your interactions
-4. Share your creation with the community or try out other users' bots
+## Mobile (android only for now!) 
+Download the latest version of the app [here](https://github.com/ItzCyzmiX/Chat-Verse-App/releases)
+## Web
+Head over to the chatverse [website](https://ai-chat-verse.vercel.app)
 
 ## Tech Stack
 
