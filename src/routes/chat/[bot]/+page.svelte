@@ -110,17 +110,20 @@
 				
 				try {
                 // First request microphone permission
-					const result = await Media.requestPermissions({
-						permissions: ['microphone'],
-						audio: true  // Explicitly request audio permission
-					});
-					console.log('Permission result:', result);
+					const r = await Media.checkPermissions();
 					
-					if (!result || result.microphone !== 'granted') {
-						alert('Microphone permission is required for recording');
-						return;
+					if (r.microphone !== 'granted') {
+						const result = await Media.requestPermissions({
+							permissions: ['microphone'],
+							audio: true  // Explicitly request audio permission
+						});
+						console.log('Permission result:', result);
+						
+						if (!result || result.microphone !== 'granted') {
+							alert('Microphone permission is required for recording');
+							return;
+						}
 					}
-					
 					// Start recording with explicit audio settings
 					await Media.startRecording({
 						quality: 'medium',
@@ -197,7 +200,6 @@
 			isRecording = false;
 		}
 	}
-
 	// New helper function to process the recording
 	async function processRecording(base64Audio) {
 		try {
