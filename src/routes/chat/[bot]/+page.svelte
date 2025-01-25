@@ -85,7 +85,7 @@
 			// Create File object from Blob
 			const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
 			const savedLanguage = localStorage.getItem('preferredLanguage') || "en"
-		
+			
 			
 			const transcription = await groq.audio.transcriptions.create({
 				file: audioFile,
@@ -95,6 +95,7 @@
 				language: savedLanguage, 
 				temperature: 0.0,
 			});
+			alert(transcription)
 			return transcription.text;
 		} catch (error) {
 			console.error('Transcription error details:', error); // Detailed error logging
@@ -210,7 +211,7 @@
 			
 			let text = await transcribe(base64Audio);
 			console.log('Transcription result:', text); // Debug log
-			
+			alert(text)
 			newMessage = text;
 			const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
 			let thebool = savedAutoSend === "true";
@@ -626,7 +627,7 @@
 					aria-label="record"
 					disabled={botThinking}
 					type="submit"
-					class="bg-white text-black  px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-200 disabled:bg-gray-400 disabled:text-gray-800"
+					class="bg-white text-black px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-800"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l-2 9 18-9-18-9 2 9zm0 0h8"/>
