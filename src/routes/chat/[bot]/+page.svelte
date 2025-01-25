@@ -167,7 +167,7 @@
 			try {
 				const transcription = await groq.audio.transcriptions.create({
 					file: audioFile,
-					model: "whisper-large-v3-turbo",
+					model: "whisper-large-v3",
 					prompt: "Specify context or spelling",
 					response_format: "json",
 					language: savedLanguage,
@@ -177,7 +177,7 @@
 				return transcription.text;
 			} catch (transcriptionError) {
 				console.error('Transcription API error:', transcriptionError);
-				throw new Error('Failed to transcribe audio');
+				throw new Error('Failed to transcribe audio' +transcriptionError.message );
 			}
 		} catch (error) {
 			console.error('Transcription processing error:', error);
@@ -245,6 +245,11 @@
 
 					// Ensure proper formatting of base64 data
 					let base64Data = recordingResult.value.recordDataBase64;
+					
+					if (!base64Data.match(/^[A-Za-z0-9+/]+={0,2}$/)) {
+						throw new Error('Invalid base64 audio data received');
+					}
+
 					if (!base64Data.startsWith('data:audio')) {
 						base64Data = `data:audio/wav;base64,${base64Data}`;
 					}
