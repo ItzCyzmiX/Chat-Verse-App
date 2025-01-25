@@ -8,6 +8,7 @@
 	import { browser } from "$app/environment";
 	import { Media } from '@capacitor-community/media';
 	import { Capacitor } from '@capacitor/core';
+	import { VoiceRecorder } from 'capacitor-voice-recorder';
 
 	let messages = $state([]);
 	let newMessage = $state("");
@@ -96,7 +97,10 @@
 	}
 	async function startRecording() {
 		try {
-			if (Capacitor.getPlatform() === 'web') {
+			const platform = Capacitor.getPlatform();
+			console.log('Platform:', platform);
+
+			if (platform === 'web') {
 				// Web browser recording logic
 				if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 					alert('Your browser does not support audio recording');
@@ -106,45 +110,32 @@
 				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 				mediaRecorder = new MediaRecorder(stream);
 				
-			} else {
-				
+			} else if (platform === 'android' || platform === 'ios') {
 				try {
-                // First request microphone permission
-					const r = await Media.checkPermissions();
-					
-					if (r.microphone !== 'granted') {
-						const result = await Media.requestPermissions({
-							permissions: ['microphone'],
-							audio: true  // Explicitly request audio permission
-						});
-						console.log('Permission result:', result);
-						
-						if (!result || result.microphone !== 'granted') {
+					// Check permission
+					const hasPermission = await VoiceRecorder.hasAudioRecordingPermission();
+					if (!hasPermission.value) {
+						const permission = await VoiceRecorder.requestAudioRecordingPermission();
+						if (!permission.value) {
 							alert('Microphone permission is required for recording');
 							return;
 						}
 					}
-					// Start recording with explicit audio settings
-					await Media.startRecording({
-						quality: 'medium',
-						webPath: 'recording.wav',
-						audio: true,
-						audioChannels: 1,
-						audioSampleRate: 44100,
-						audioBitRate: 128000
-					});
+					
+					// Start recording
+					await VoiceRecorder.startRecording();
 					console.log('Recording started on mobile');
-            	} 	catch (err) {
-                	console.error('Mobile recording error:', err);
-                	alert(`Error starting recording: ${err.message}`);
-                	return;
-            	}
+				} catch (err) {
+					console.error('Mobile recording error:', err);
+					alert(`Error starting recording: ${err.message}`);
+					return;
+				}
 			}
 			
 			isRecording = true;
 			transcribing = true;
 
-			if (Capacitor.getPlatform() === 'web') {
+			if (platform === 'web') {
 				// Web browser specific setup
 				mediaRecorder.ondataavailable = (event) => {
 					audioChunks.push(event.data);
@@ -154,7 +145,6 @@
 					const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
 					audioChunks = [];
 					
-					// Convert blob to base64
 					const reader = new FileReader();
 					reader.readAsDataURL(audioBlob);
 					reader.onloadend = async () => {
@@ -175,23 +165,29 @@
 
 	async function stopRecording() {
 		try {
-			if (Capacitor.getPlatform() === 'web') {
+			const platform = Capacitor.getPlatform();
+			console.log('Stopping recording on platform:', platform);
+
+			if (platform === 'web') {
 				if (mediaRecorder && isRecording) {
 					mediaRecorder.stop();
 					mediaRecorder.stream.getTracks().forEach(track => track.stop());
 				}
-			} else {
-				const recordingData = await Media.stopRecording();
-				const response = await fetch(recordingData.webPath);
-				const blob = await response.blob();
-				
-				// Convert blob to base64
-				const reader = new FileReader();
-				reader.readAsDataURL(blob);
-				reader.onloadend = async () => {
-					const base64Audio = reader.result.split(',')[1];
-					await processRecording(base64Audio);
-				};
+			} else if (platform === 'android' || platform === 'ios') {
+				try {
+					const recordingResult = await VoiceRecorder.stopRecording();
+					const recordingData = recordingResult.value;
+					console.log('Recording data:', recordingData);
+
+					if (!recordingData || !recordingData.recordDataBase64) {
+						throw new Error('No recording data received');
+					}
+
+					await processRecording(recordingData.recordDataBase64);
+				} catch (err) {
+					console.error('Mobile stop recording error:', err);
+					alert(`Error stopping recording: ${err.message}`);
+				}
 			}
 		} catch (error) {
 			console.error('Error stopping recording:', error);

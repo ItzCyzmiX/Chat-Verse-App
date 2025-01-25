@@ -3,12 +3,6 @@
   "appName": "ChatVerse",
   "webDir": "build",
   "bundledWebRuntime": false,
-  "plugins": {
-    "Media": {
-      "requestPermissions": true,
-      "permissions": ["microphone"]
-    }
-  },
   "server": {
     "androidScheme": "https"
   },
