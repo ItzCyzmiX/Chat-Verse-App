@@ -6,6 +6,8 @@
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import { browser } from "$app/environment";
+	import { Media } from '@capacitor-community/media';
+	import { Capacitor } from '@capacitor/core';
 
 	let messages = $state([]);
 	let newMessage = $state("");
@@ -104,6 +106,16 @@
 		if (permissionResult.state === 'denied') {
 			alert('Please allow microphone access in your browser settings to use voice recording');
 			return;
+		}
+
+		
+
+		if (Capacitor.getPlatform() !== 'web') {
+			const CapacitorPermission = await Media.requestPermissions();
+			if (!CapacitorPermission.microphone === 'granted') {
+				alert('Please allow microphone access in your browser settings to use voice recording');
+				return
+			}
 		}
 		try {
 			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
