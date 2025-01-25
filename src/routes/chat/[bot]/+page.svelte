@@ -244,14 +244,20 @@
 					}
 
 					// Ensure proper formatting of base64 data
+					// Extract base64 without data URL prefix
 					let base64Data = recordingResult.value.recordDataBase64;
-					
-					if (!base64Data.match(/^[A-Za-z0-9+/]+={0,2}$/)) {
-						throw new Error('Invalid base64 audio data received');
+					const [prefix, data] = base64Data.split('base64,'); // Split prefix and data
+					const actualBase64 = data || base64Data; // Use data part if exists
+
+					// Validate base64 format
+					if (!actualBase64.match(/^[A-Za-z0-9+/]+={0,0,2}$/)) {
+						console.error('Invalid base64 data:', actualBase64.slice(0, 50));
+						throw new Error('Invalid audio data format');
 					}
 
-					if (!base64Data.startsWith('data:audio')) {
-						base64Data = `data:audio/wav;base64,${base64Data}`;
+					// Reconstruct proper data URL
+					if (!prefix?.startsWith('data:audio')) {
+						base64Data = `data:audio/wav;base64,${actualBase64}`;
 					}
 
 					await processRecording(base64Data);
