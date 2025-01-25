@@ -71,37 +71,7 @@
 	let isRecording = $state(false);
 	let audioChunks = $state([]);
 	let transcribing = $state(false)
-	async function transcribe(audioBase64) {
-		try {
-			// Convert base64 to Blob
-			const byteCharacters = atob(audioBase64);
-			const byteNumbers = new Array(byteCharacters.length);
-			for (let i = 0; i < byteCharacters.length; i++) {
-				byteNumbers[i] = byteCharacters.charCodeAt(i);
-			}
-			const byteArray = new Uint8Array(byteNumbers);
-			const audioBlob = new Blob([byteArray], { type: 'audio/wav' });
 
-			// Create File object from Blob
-			const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
-			const savedLanguage = localStorage.getItem('preferredLanguage') || "en"
-			
-			
-			const transcription = await groq.audio.transcriptions.create({
-				file: audioFile,
-				model: "whisper-large-v3-turbo",
-				prompt: "Specify context or spelling",
-				response_format: "json",
-				language: savedLanguage, 
-				temperature: 0.0,
-			});
-			alert(transcription)
-			return transcription.text;
-		} catch (error) {
-			console.error('Transcription error details:', error); // Detailed error logging
-			throw error; // Re-throw to be handled by the caller
-		}
-	}
 	async function startRecording() {
 		try {
 			const platform = Capacitor.getPlatform();
@@ -170,6 +140,92 @@
 		}
 	}
 
+	async function transcribe(audioBase64) {
+			try {
+			// Remove any data URL prefix if present
+			const base64Data = audioBase64.includes('base64,') 
+				? audioBase64.split('base64,')[1] 
+				: audioBase64;
+
+			// Convert base64 to Blob
+			const byteCharacters = atob(base64Data);
+			const byteNumbers = new Array(byteCharacters.length);
+			for (let i = 0; i < byteCharacters.length; i++) {
+				byteNumbers[i] = byteCharacters.charCodeAt(i);
+			}
+			const byteArray = new Uint8Array(byteNumbers);
+			
+			// Create blob with proper mime type
+			const audioBlob = new Blob([byteArray], { type: 'audio/wav' });
+			
+			// Create FormData and append file
+			const formData = new FormData();
+			const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+			
+			const savedLanguage = localStorage.getItem('preferredLanguage') || "en";
+			
+			try {
+				const transcription = await groq.audio.transcriptions.create({
+					file: audioFile,
+					model: "whisper-large-v3-turbo",
+					prompt: "Specify context or spelling",
+					response_format: "json",
+					language: savedLanguage,
+					temperature: 0.0,
+				});
+				
+				return transcription.text;
+			} catch (transcriptionError) {
+				console.error('Transcription API error:', transcriptionError);
+				throw new Error('Failed to transcribe audio');
+			}
+		} catch (error) {
+			console.error('Transcription processing error:', error);
+			throw error;
+		}
+	}
+
+	async function processRecording(base64Audio) {
+		try {
+			console.log('Processing recording...');
+			
+			// Validate base64 audio data
+			if (!base64Audio) {
+				throw new Error('No audio data received');
+			}
+
+			transcribing = true;
+			
+			// Add error handling and timeout
+			const transcriptionPromise = transcribe(base64Audio);
+			const timeoutPromise = new Promise((_, reject) => 
+				setTimeout(() => reject(new Error('Transcription timed out')), 30000)
+			);
+
+			const text = await Promise.race([transcriptionPromise, timeoutPromise]);
+			
+			if (!text) {
+				throw new Error('No transcription result received');
+			}
+
+			console.log('Transcription result:', text);
+			newMessage = text;
+			
+			const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
+			const shouldAutoSend = savedAutoSend === "true";
+			
+			if (shouldAutoSend) {
+				handleSubmit(new Event('submit'));
+			}
+		} catch (error) {
+			console.error('Processing error:', error);
+			alert('Error processing audio: ' + (error.message || 'Unknown error'));
+		} finally {
+			transcribing = false;
+		}
+	}
+
+	// For mobile recording, modify the stopRecording function:
 	async function stopRecording() {
 		try {
 			const platform = Capacitor.getPlatform();
@@ -183,14 +239,17 @@
 			} else if (platform === 'android' || platform === 'ios') {
 				try {
 					const recordingResult = await VoiceRecorder.stopRecording();
-					const recordingData = recordingResult.value;
-					console.log('Recording data:', recordingData);
-
-					if (!recordingData || !recordingData.recordDataBase64) {
-						throw new Error('No recording data received');
+					if (!recordingResult || !recordingResult.value || !recordingResult.value.recordDataBase64) {
+						throw new Error('No recording data received from device');
 					}
 
-					await processRecording(recordingData.recordDataBase64);
+					// Ensure proper formatting of base64 data
+					let base64Data = recordingResult.value.recordDataBase64;
+					if (!base64Data.startsWith('data:audio')) {
+						base64Data = `data:audio/wav;base64,${base64Data}`;
+					}
+
+					await processRecording(base64Data);
 				} catch (err) {
 					console.error('Mobile stop recording error:', err);
 					alert(`Error stopping recording: ${err.message}`);
@@ -201,28 +260,6 @@
 			alert('Error stopping recording: ' + error.message);
 		} finally {
 			isRecording = false;
-		}
-	}
-	// New helper function to process the recording
-	async function processRecording(base64Audio) {
-		try {
-			console.log('Processing recording...'); // Debug log
-			console.log('Base64 audio length:', base64Audio.length); // Debug log
-			
-			let text = await transcribe(base64Audio);
-			console.log('Transcription result:', text); // Debug log
-			alert(text)
-			newMessage = text;
-			const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
-			let thebool = savedAutoSend === "true";
-			transcribing = false;
-			if (thebool) {
-				handleSubmit(new Event('submit'));
-			}
-		} catch (error) {
-			console.error('Processing error:', error);
-			alert('Transcription error: ' + (error.message || 'Unknown error'));
-			transcribing = false;
 		}
 	}
 
