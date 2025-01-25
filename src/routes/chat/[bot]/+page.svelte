@@ -107,22 +107,35 @@
 				mediaRecorder = new MediaRecorder(stream);
 				
 			} else {
-				// Mobile recording logic using Capacitor
-				const perm = await Media.getPermissions();
-				if (perm.microphone !== 'granted') {
+				
+				try {
+                // First request microphone permission
 					const result = await Media.requestPermissions({
-            permissions: ['microphone'], // Request the 'microphone' permission alias
-        });
-					if (result.microphone !== 'granted') {
-						console.error('Required permissions not granted');
-						return
+						permissions: ['microphone'],
+						audio: true  // Explicitly request audio permission
+					});
+					console.log('Permission result:', result);
+					
+					if (!result || result.microphone !== 'granted') {
+						alert('Microphone permission is required for recording');
+						return;
 					}
-				} 
-			   
-				await Media.startRecording({
-					quality: 'medium',
-					webPath: 'recording.wav'
-				});
+					
+					// Start recording with explicit audio settings
+					await Media.startRecording({
+						quality: 'medium',
+						webPath: 'recording.wav',
+						audio: true,
+						audioChannels: 1,
+						audioSampleRate: 44100,
+						audioBitRate: 128000
+					});
+					console.log('Recording started on mobile');
+            	} 	catch (err) {
+                	console.error('Mobile recording error:', err);
+                	alert(`Error starting recording: ${err.message}`);
+                	return;
+            	}
 			}
 			
 			isRecording = true;
