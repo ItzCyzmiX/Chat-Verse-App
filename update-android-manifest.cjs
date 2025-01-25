@@ -12,10 +12,11 @@ fs.readFile(manifestPath, 'utf8', (err, data) => {
     // Check if permissions already exist to avoid duplication
     const permissions = [
         '<uses-permission android:name="android.permission.RECORD_AUDIO" />',
-        '<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />',
-        '<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />',
+        // '<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />',
+        // '<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />',
         '<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />',
         '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />',
+        '<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />,'
     ];
 
     let updatedData = data;

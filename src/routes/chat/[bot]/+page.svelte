@@ -108,7 +108,7 @@
 				
 			} else {
 				// Mobile recording logic using Capacitor
-				const permission = await Media.checkPermissions();
+				const result = await Media.requestPermissions({ permissions: ['microphone'] });
 				if (permission.microphone !== 'granted') {
 					const request = await Media.requestPermissions();
 					if (request.microphone !== 'granted') {
