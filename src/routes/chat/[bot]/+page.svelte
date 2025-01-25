@@ -96,23 +96,22 @@
 	}
 	async function startRecording() {
 		// Check if browser supports getUserMedia
-		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-			alert('Your browser does not support audio recording');
-			return;
-		}
+		if (Capacitor.getPlatform() === 'web') {
+			if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+				alert('Your browser does not support audio recording');
+				return;
+			}
 
-		// Request permission explicitly first
-		const permissionResult = await navigator.permissions.query({ name: 'microphone' });
-		if (permissionResult.state === 'denied') {
-			alert('Please allow microphone access in your browser settings to use voice recording');
-			return;
-		}
+			// Request permission explicitly first
+			const permissionResult = await navigator.permissions.query({ name: 'microphone' });
+			if (permissionResult.state === 'denied') {
+				alert('Please allow microphone access in your browser settings to use voice recording');
+				return;
+			}
 
-		
-
-		if (Capacitor.getPlatform() !== 'web') {
+		} else {
 			const CapacitorPermission = await Media.requestPermissions();
-			if (!CapacitorPermission.microphone === 'granted') {
+			if (CapacitorPermission.microphone !== 'granted') {
 				alert('Please allow microphone access in your browser settings to use voice recording');
 				return
 			}
