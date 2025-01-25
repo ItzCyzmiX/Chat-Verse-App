@@ -52,7 +52,7 @@ jobs:
         run: npx capacitor-assets generate --android
       
       - name: Update AndroidManifest.xml
-        run: node ./update-android-manifest.js
+        run: node ./update-android-manifest.cjs
         
       # Step 7: Build the Android app
       - name: Build Android app
