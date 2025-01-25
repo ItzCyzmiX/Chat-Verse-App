@@ -60,6 +60,12 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.4.49)
+      prettier:
+        specifier: ^3.4.2
+        version: 3.4.2
+      prettier-plugin-svelte:
+        specifier: ^3.3.3
+        version: 3.3.3(prettier@3.4.2)(svelte@5.16.1)
       svelte:
         specifier: ^5.0.0
         version: 5.16.1
@@ -2101,9 +2107,20 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  prettier-plugin-svelte@3.3.3:
+    resolution: {integrity: sha512-yViK9zqQ+H2qZD1w/bH7W8i+bVfKrD8GIFjkFe4Thl6kCT9SlAsXVNmt3jCvQOCsnOhcvYgsoVlRV/Eu6x5nNw==}
+    peerDependencies:
+      prettier: ^3.0.0
+      svelte: ^3.2.0 || ^4.0.0-next.0 || ^5.0.0-next.0
+
   prettier@2.8.8:
     resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
     engines: {node: '>=10.13.0'}
+    hasBin: true
+
+  prettier@3.4.2:
+    resolution: {integrity: sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==}
+    engines: {node: '>=14'}
     hasBin: true
 
   process-nextick-args@2.0.1:
@@ -3154,7 +3171,7 @@ snapshots:
   '@prettier/plugin-xml@2.2.0':
     dependencies:
       '@xml-tools/parser': 1.0.11
-      prettier: 2.8.8
+      prettier: 3.4.2
 
   '@rollup/plugin-commonjs@28.0.2(rollup@4.29.1)':
     dependencies:
@@ -4773,7 +4790,14 @@ snapshots:
       tar-fs: 2.1.1
       tunnel-agent: 0.6.0
 
+  prettier-plugin-svelte@3.3.3(prettier@3.4.2)(svelte@5.16.1):
+    dependencies:
+      prettier: 3.4.2
+      svelte: 5.16.1
+
   prettier@2.8.8: {}
+
+  prettier@3.4.2: {}
 
   process-nextick-args@2.0.1: {}
 
