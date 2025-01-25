@@ -3,13 +3,31 @@
     import supabase from "$lib/supabase";
     import { onMount } from "svelte";
 
-    const userData = {
+
+    let preferredLanguage = $state("en")
+
+    let autoSendVoiceMessage = $state(false)
+
+    let userData = $state({
         name: " ",
         profilePicture: "",
-        createdBots: [],
-    };
+       
+    });
 
     onMount(async () => {
+        
+                // Load saved preferences from localStorage on component mount
+                const savedLanguage = localStorage.getItem('preferredLanguage');
+               
+        if (savedLanguage) {
+            preferredLanguage = savedLanguage;
+        }
+
+        const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
+        if (savedAutoSend) {
+            autoSendVoiceMessage =savedAutoSend === "true" ? true : false;
+        }
+        
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -17,7 +35,7 @@
         userData.profilePicture =
             "https://api.dicebear.com/7.x/avataaars/svg?seed=" +
             user.user_metadata.username;
-        userData.createdBots = user.user_metadata.createdBots || [];
+       
     });
 
     async function logout() {
@@ -28,6 +46,18 @@
             goto("/login");
         }
     }
+
+    $effect(() => {
+        // Save preferences to localStorage whenever they change
+        if (preferredLanguage) {
+            localStorage.setItem('preferredLanguage', preferredLanguage);
+        }
+        if (autoSendVoiceMessage !== "") {
+            localStorage.setItem('autoSendVoiceMessage', autoSendVoiceMessage);
+        }
+    });
+
+  
 </script>
 <svelte:head>
 	<title>{userData.username}</title>
@@ -124,37 +154,46 @@
             </div>
         </div>
 
-        <section class="mb-8 sm:mb-12">
-            <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
-                Created Chatbots
-            </h2>
-            <div
-                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-            >
-                {#if userData.createdBots.length === 0}
-                    <p class="text-zinc-400">
-                        You havent created any chatbots yet
-                    </p>
-                {:else}
-                    {#each userData.createdBots as bot}
-                        <div
-                            class="bg-zinc-800/30 rounded-xl p-4 sm:p-6 transition-all duration-200 hover:transform hover:-translate-y-1 hover:bg-zinc-900 cursor-pointer border-2 border-white/20"
+        <div class="bg-zinc-800/30 rounded-xl p-4 sm:p-8 border-2 border-white/20">
+            <h2 class="text-xl sm:text-2xl font-bold mb-6 text-white">Settings</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <label for="language" class="block text-sm font-medium text-zinc-400 mb-2">
+                        Bot Response Language
+                    </label>
+                    <select
+                        id="language"
+                        bind:value={preferredLanguage}
+                        class="w-full sm:w-64 bg-zinc-900/50 border-2 border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-white/40"
+                    >
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ru">Russian</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="zh">Chinese</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox"
+                            bind:checked={autoSendVoiceMessage}
+                            class="sr-only peer"
                         >
-                            <h3 class="text-lg sm:text-xl font-bold mb-2">
-                                {bot.name}
-                            </h3>
-                            <p class="text-zinc-400 text-xs sm:text-sm">
-                                {bot.title}
-                            </p>
-                            <p class="text-zinc-500 text-xs mt-4">
-                                Created: {new Date(
-                                    bot.createdAt,
-                                ).toLocaleDateString()}
-                            </p>
-                        </div>
-                    {/each}
-                {/if}
+                        <div class="w-11 h-6 bg-zinc-900/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-700"></div>
+                        <span class="ms-3 text-sm font-medium text-zinc-400">
+                            Auto-send voice messages
+                        </span>
+                    </label>
+                </div>
             </div>
-        </section>
+        </div>
     </div>
 </div>

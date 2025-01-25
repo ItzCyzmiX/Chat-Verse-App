@@ -80,13 +80,13 @@
 
 		// Create File object from Blob
 		const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
-
+		const savedLanguage = localStorage.getItem('preferredLanguage') || "en"
 		const transcription = await groq.audio.transcriptions.create({
 			file: audioFile,
 			model: "whisper-large-v3-turbo",
 			prompt: "Specify context or spelling",
 			response_format: "json",
-			language: "en", 
+			language: savedLanguage, 
 			temperature: 0.0,
 		});
 		
@@ -98,8 +98,6 @@
 			alert('Your browser does not support audio recording');
 			return;
 		}
-
-		
 
 		// Request permission explicitly first
 		const permissionResult = await navigator.permissions.query({ name: 'microphone' });
@@ -129,7 +127,12 @@
 					try {
 						let text = await transcribe(base64Audio);
 						newMessage = text;
+						const savedAutoSend = localStorage.getItem('autoSendVoiceMessage') 
+						let thebool = savedAutoSend === "true" ? true : false;
 						transcribing = false
+						if (thebool) {
+							handleSubmit(new Event('submit'))
+						}
 					} catch (error) {
 						alert('Transcription error:', error);
 						console.log(error);
@@ -237,7 +240,7 @@
 				{
 					role: "system",
 
-					content: `your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character, keep the conversation hype and flowing`,
+					content: `your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character, keep the conversation hype and flowing.` + ` respond in ${localStorage.getItem('preferredLanguage') || "en"}`,
 				},
 
 				...filteredHistory,
