@@ -95,77 +95,111 @@
 		return transcription.text;
 	}
 	async function startRecording() {
-		// Check if browser supports getUserMedia
-		if (Capacitor.getPlatform() === 'web') {
-			if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-				alert('Your browser does not support audio recording');
-				return;
-			}
-
-			// Request permission explicitly first
-			const permissionResult = await navigator.permissions.query({ name: 'microphone' });
-			if (permissionResult.state === 'denied') {
-				alert('Please allow microphone access in your browser settings to use voice recording');
-				return;
-			}
-
-		} else {
-			const CapacitorPermission = await Media.requestPermissions();
-			if (CapacitorPermission.microphone !== 'granted') {
-				alert('Please allow microphone access in your browser settings to use voice recording');
-				return
-			}
-		}
 		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			mediaRecorder = new MediaRecorder(stream);
-			isRecording = true;
-			transcribing = true
-			mediaRecorder.ondataavailable = (event) => {
-				audioChunks.push(event.data);
-			};
+			if (Capacitor.getPlatform() === 'web') {
+				// Web browser recording logic
+				if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+					alert('Your browser does not support audio recording');
+					return;
+				}
 
-			mediaRecorder.onstop = async () => {
-				const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-				audioChunks = [];
+				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				mediaRecorder = new MediaRecorder(stream);
+				
+			} else {
+				// Mobile recording logic using Capacitor
+				const permission = await Media.checkPermissions();
+				if (permission.microphone !== 'granted') {
+					const request = await Media.requestPermissions();
+					if (request.microphone !== 'granted') {
+						alert('Microphone permission is required for recording');
+						return;
+					}
+				}
+				
+				await Media.startRecording({
+					quality: 'medium',
+					webPath: 'recording.wav'
+				});
+			}
+			
+			isRecording = true;
+			transcribing = true;
+
+			if (Capacitor.getPlatform() === 'web') {
+				// Web browser specific setup
+				mediaRecorder.ondataavailable = (event) => {
+					audioChunks.push(event.data);
+				};
+
+				mediaRecorder.onstop = async () => {
+					const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+					audioChunks = [];
+					
+					// Convert blob to base64
+					const reader = new FileReader();
+					reader.readAsDataURL(audioBlob);
+					reader.onloadend = async () => {
+						const base64Audio = reader.result.split(',')[1];
+						await processRecording(base64Audio);
+					};
+				};
+
+				mediaRecorder.start();
+			}
+		} catch (error) {
+			console.error('Recording error:', error);
+			alert('Error accessing microphone: ' + error.message);
+			isRecording = false;
+			transcribing = false;
+		}
+	}
+
+	async function stopRecording() {
+		try {
+			if (Capacitor.getPlatform() === 'web') {
+				if (mediaRecorder && isRecording) {
+					mediaRecorder.stop();
+					mediaRecorder.stream.getTracks().forEach(track => track.stop());
+				}
+			} else {
+				const recordingData = await Media.stopRecording();
+				const response = await fetch(recordingData.webPath);
+				const blob = await response.blob();
 				
 				// Convert blob to base64
 				const reader = new FileReader();
-				reader.readAsDataURL(audioBlob);
+				reader.readAsDataURL(blob);
 				reader.onloadend = async () => {
 					const base64Audio = reader.result.split(',')[1];
-					
-					try {
-						let text = await transcribe(base64Audio);
-						newMessage = text;
-						const savedAutoSend = localStorage.getItem('autoSendVoiceMessage') 
-						let thebool = savedAutoSend === "true" ? true : false;
-						transcribing = false
-						if (thebool) {
-							handleSubmit(new Event('submit'))
-						}
-					} catch (error) {
-						alert('Transcription error:', error);
-						console.log(error);
-					}
+					await processRecording(base64Audio);
 				};
-			};
-
-			mediaRecorder.start();
+			}
 		} catch (error) {
-			alert('Error accessing microphone:', error);
-		}
-	}
-
-	function stopRecording() {
-		if (mediaRecorder && isRecording) {
-			mediaRecorder.stop();
+			console.error('Error stopping recording:', error);
+			alert('Error stopping recording: ' + error.message);
+		} finally {
 			isRecording = false;
-			mediaRecorder.stream.getTracks().forEach(track => track.stop());
 		}
 	}
 
-
+	// New helper function to process the recording
+	async function processRecording(base64Audio) {
+		try {
+			let text = await transcribe(base64Audio);
+			newMessage = text;
+			const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
+			let thebool = savedAutoSend === "true";
+			transcribing = false;
+			if (thebool) {
+				handleSubmit(new Event('submit'));
+			}
+		} catch (error) {
+			alert('Transcription error: ' + error.message);
+			console.error(error);
+			transcribing = false;
+		}
+	}
 
 	onMount(async () => {
 		let { data, error } = await supabase
