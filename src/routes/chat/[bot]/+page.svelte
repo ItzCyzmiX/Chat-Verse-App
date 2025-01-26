@@ -185,9 +185,10 @@
 		try {
 			console.log('Processing recording...');
 
-			// Validate base64 audio data
-			if (!base64Audio) {
-				throw new Error('No audio data received');
+			// Add validation
+			console.log('Base64 audio prefix:', base64Audio.slice(0, 30));
+			if (!base64Audio.match(/^[A-Za-z0-9+/]+={0,2}$/)) {
+				throw new Error('Invalid base64 encoding');
 			}
 
 			transcribing = true;
@@ -228,16 +229,18 @@
 			} else if (platform === 'android' || platform === 'ios') {
 				try {
 					const recordingResult = await VoiceRecorder.stopRecording();
-					if (
-						!recordingResult ||
-						!recordingResult.value ||
-						!recordingResult.value.recordDataBase64
-					) {
-						throw new Error('No recording data received from device');
+					if (!recordingResult?.value?.recordDataBase64) {
+						throw new Error('Invalid recording data format');
 					}
 
-					// Ensure proper formatting of base64 data
+					// Convert Android/iOS base64 to proper WAV format
+					const header = 'UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ';
 					let base64Data = recordingResult.value.recordDataBase64;
+					
+					// Ensure proper WAV headers
+					if (!base64Data.startsWith(header)) {
+						base64Data = `data:audio/wav;base64,${base64Data}`;
+					}
 
 					await processRecording(base64Data);
 				} catch (err) {
