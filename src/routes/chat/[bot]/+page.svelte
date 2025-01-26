@@ -1,29 +1,29 @@
 <script>
-	import { scale } from "svelte/transition";
-	import { onMount } from "svelte";
-	import supabase from "$lib/supabase";
-	import groq from "$lib/groq";
-	import { page } from "$app/stores";
-	import { goto } from "$app/navigation";
-	import { browser } from "$app/environment";
+	import { scale } from 'svelte/transition';
+	import { onMount } from 'svelte';
+	import supabase from '$lib/supabase';
+	import groq from '$lib/groq';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { Media } from '@capacitor-community/media';
 	import { Capacitor } from '@capacitor/core';
 	import { VoiceRecorder } from 'capacitor-voice-recorder';
 
 	let messages = $state([]);
-	let newMessage = $state("");
+	let newMessage = $state('');
 	let showDetails = $state(false);
 	let allOldMessages = $state({});
 
-	let USER_ID = $state("");
-	let username = $state("");
-	let botCreator = $state("Unknown Creator");
+	let USER_ID = $state('');
+	let username = $state('');
+	let botCreator = $state('Unknown Creator');
 	let botId = $page.params.bot;
-	let botName = $state("");
-	let botDescription = $state("Unknown Description");
-	let botBehavior = $state("Unknown Behavior");
-	let botRelationship = $state("Unknown Relationship");
-	let botGreeting = $state("");
+	let botName = $state('');
+	let botDescription = $state('Unknown Description');
+	let botBehavior = $state('Unknown Behavior');
+	let botRelationship = $state('Unknown Relationship');
+	let botGreeting = $state('');
 
 	let botThinking = $state(false);
 
@@ -38,14 +38,13 @@
 	let shouldAutoScroll = true;
 
 	// Function to scroll to bottom
-	const scrollToBottom = (type = "smooth") => {
+	const scrollToBottom = (type = 'smooth') => {
 		if (!chatContainer) return;
 
-		const shouldSmooth =
-			document.body.clientHeight - window.innerHeight > 100;
+		const shouldSmooth = document.body.clientHeight - window.innerHeight > 100;
 		chatContainer.scrollTo({
 			top: chatContainer.scrollHeight,
-			behavior: type,
+			behavior: type
 		});
 	};
 
@@ -54,23 +53,20 @@
 		if (!chatContainer) return;
 
 		const bottom =
-			Math.abs(
-				chatContainer.scrollHeight -
-					chatContainer.clientHeight -
-					chatContainer.scrollTop,
-			) < 100;
+			Math.abs(chatContainer.scrollHeight - chatContainer.clientHeight - chatContainer.scrollTop) <
+			100;
 		shouldAutoScroll = bottom;
 	};
 	$effect(() => {
 		if (messages.length > 0 && shouldAutoScroll) {
-			scrollToBottom("auto");
+			scrollToBottom('auto');
 		}
 	});
 
 	let mediaRecorder;
 	let isRecording = $state(false);
 	let audioChunks = $state([]);
-	let transcribing = $state(false)
+	let transcribing = $state(false);
 
 	async function startRecording() {
 		try {
@@ -86,7 +82,6 @@
 
 				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 				mediaRecorder = new MediaRecorder(stream);
-				
 			} else if (platform === 'android' || platform === 'ios') {
 				try {
 					// Check permission
@@ -98,7 +93,7 @@
 							return;
 						}
 					}
-					
+
 					// Start recording
 					await VoiceRecorder.startRecording();
 					console.log('Recording started on mobile');
@@ -108,7 +103,7 @@
 					return;
 				}
 			}
-			
+
 			isRecording = true;
 			transcribing = true;
 
@@ -121,7 +116,7 @@
 				mediaRecorder.onstop = async () => {
 					const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
 					audioChunks = [];
-					
+
 					const reader = new FileReader();
 					reader.readAsDataURL(audioBlob);
 					reader.onloadend = async () => {
@@ -141,11 +136,14 @@
 	}
 
 	async function transcribe(audioBase64) {
-			try {
+		try {
+			let base64Data = audioBase64
 			// Remove any data URL prefix if present
-			const base64Data = audioBase64.includes('base64,') 
-				? audioBase64.split('base64,')[1] 
-				: audioBase64;
+			if (Capacitor.getPlatform() === 'web') {
+				base64Data = audioBase64.includes('base64,')
+					? audioBase64.split('base64,')[1]
+					: audioBase64;
+			}
 
 			// Convert base64 to Blob
 			const byteCharacters = atob(base64Data);
@@ -154,30 +152,30 @@
 				byteNumbers[i] = byteCharacters.charCodeAt(i);
 			}
 			const byteArray = new Uint8Array(byteNumbers);
-			
+
 			// Create blob with proper mime type
 			const audioBlob = new Blob([byteArray], { type: 'audio/wav' });
-			
+
 			// Create FormData and append file
 			const formData = new FormData();
 			const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
-			
-			const savedLanguage = localStorage.getItem('preferredLanguage') || "en";
-			
+
+			const savedLanguage = localStorage.getItem('preferredLanguage') || 'en';
+			console.log(audioFile, base64Data);
 			try {
 				const transcription = await groq.audio.transcriptions.create({
 					file: audioFile,
-					model: "whisper-large-v3",
-					prompt: "Specify context or spelling",
-					response_format: "json",
+					model: 'whisper-large-v3',
+					prompt: 'Specify context or spelling',
+					response_format: 'json',
 					language: savedLanguage,
-					temperature: 0.0,
+					temperature: 0.0
 				});
-				
+
 				return transcription.text;
 			} catch (transcriptionError) {
 				console.error('Transcription API error:', transcriptionError);
-				throw new Error('Failed to transcribe audio' +transcriptionError.message );
+				throw new Error('Failed to transcribe audio ' + transcriptionError.message);
 			}
 		} catch (error) {
 			console.error('Transcription processing error:', error);
@@ -188,32 +186,25 @@
 	async function processRecording(base64Audio) {
 		try {
 			console.log('Processing recording...');
-			
+
 			// Validate base64 audio data
 			if (!base64Audio) {
 				throw new Error('No audio data received');
 			}
 
 			transcribing = true;
-			
-			// Add error handling and timeout
-			const transcriptionPromise = transcribe(base64Audio);
-			const timeoutPromise = new Promise((_, reject) => 
-				setTimeout(() => reject(new Error('Transcription timed out')), 30000)
-			);
 
-			const text = await Promise.race([transcriptionPromise, timeoutPromise]);
-			
+			const text = await transcribe(base64Audio);
+
 			if (!text) {
 				throw new Error('No transcription result received');
 			}
 
 			console.log('Transcription result:', text);
 			newMessage = text;
-			
+
 			const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
-			const shouldAutoSend = savedAutoSend === "true";
-			
+			const shouldAutoSend = savedAutoSend === 'true';
 			if (shouldAutoSend) {
 				handleSubmit(new Event('submit'));
 			}
@@ -234,18 +225,22 @@
 			if (platform === 'web') {
 				if (mediaRecorder && isRecording) {
 					mediaRecorder.stop();
-					mediaRecorder.stream.getTracks().forEach(track => track.stop());
+					mediaRecorder.stream.getTracks().forEach((track) => track.stop());
 				}
 			} else if (platform === 'android' || platform === 'ios') {
 				try {
 					const recordingResult = await VoiceRecorder.stopRecording();
-					if (!recordingResult || !recordingResult.value || !recordingResult.value.recordDataBase64) {
+					if (
+						!recordingResult ||
+						!recordingResult.value ||
+						!recordingResult.value.recordDataBase64
+					) {
 						throw new Error('No recording data received from device');
 					}
 
 					// Ensure proper formatting of base64 data
 					let base64Data = recordingResult.value.recordDataBase64;
-			
+
 					await processRecording(base64Data);
 				} catch (err) {
 					console.error('Mobile stop recording error:', err);
@@ -261,10 +256,7 @@
 	}
 
 	onMount(async () => {
-		let { data, error } = await supabase
-			.from("chat_bots")
-			.select("*")
-			.eq("id", botId);
+		let { data, error } = await supabase.from('chat_bots').select('*').eq('id', botId);
 
 		if (error) {
 			console.error(error);
@@ -274,35 +266,29 @@
 			botDescription = data[0].description;
 			botBehavior = data[0].behavior;
 			botRelationship = data[0].relationship;
-			botGreeting = data[0]?.greeting || "";
+			botGreeting = data[0]?.greeting || '';
 		}
 
 		const {
-			data: { user },
+			data: { user }
 		} = await supabase.auth.getUser();
 		USER_ID = user.id;
 		username = user.user_metadata.username;
 		{
-			const res = await supabase
-				.from("messages")
-				.select("*")
-				.eq("user_id", user.id)
-				.single();
+			const res = await supabase.from('messages').select('*').eq('user_id', user.id).single();
 
 			try {
 				if (res.data?.msg_json?.messages?.[botId].length > 0) {
-					
 					messages = res.data.msg_json?.messages?.[botId];
 				} else {
-					throw Error
+					throw Error;
 				}
 			} catch {
-			
 				if (botGreeting) {
 					messages.push({
-						role: "assistant",
+						role: 'assistant',
 						content: botGreeting,
-						timestamp: new Date(),
+						timestamp: new Date()
 					});
 				}
 			}
@@ -323,56 +309,50 @@
 
 		loadingChats = false;
 
-		scrollToBottom("auto");
+		scrollToBottom('auto');
 	});
 	async function handleSubmit(e) {
 		e.preventDefault();
 		botThinking = true;
 		let temp = newMessage;
-		newMessage = "";
-		messages = [
-			...messages,
-			{ content: temp, role: "user", timestamp: new Date() },
-		];
+		newMessage = '';
+		messages = [...messages, { content: temp, role: 'user', timestamp: new Date() }];
 		shouldAutoScroll = true; // Force scroll on user message
 		scrollToBottom();
-		let filteredHistory = messages.map(
-			({ ["timestamp"]: _, ...rest }) => rest,
-		);
+		let filteredHistory = messages.map(({ ['timestamp']: _, ...rest }) => rest);
 		let res = await groq.chat.completions.create({
 			messages: [
 				{
-					role: "system",
+					role: 'system',
 
-					content: `your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character, keep the conversation hype and flowing.` + ` respond in ${localStorage.getItem('preferredLanguage') || "en"}`,
+					content:
+						`your a person named ${botName}, with the following personality: ${botDescription}, your chatting with the user, your relationship with the user is: ${botRelationship}, act and respond in character, keep the conversation hype and flowing.` +
+						` respond in ${localStorage.getItem('preferredLanguage') || 'en'}`
 				},
 
-				...filteredHistory,
+				...filteredHistory
 			],
 
-			model: "llama-3.3-70b-versatile",
+			model: 'llama-3.3-70b-versatile',
 
-			temperature: 1,
+			temperature: 1
 		});
 		let response = res.choices[0].message.content;
 		botThinking = false;
-		messages = [
-			...messages,
-			{ content: response, role: "assistant", timestamp: new Date() },
-		];
+		messages = [...messages, { content: response, role: 'assistant', timestamp: new Date() }];
 		let temp_ = allOldMessages || {};
 		temp_[botId] = messages;
 
 		const { data, error } = await supabase
-			.from("messages")
+			.from('messages')
 			.update({
 				msg_json: {
 					messages: {
-						...temp_,
-					},
-				},
+						...temp_
+					}
+				}
 			})
-			.eq("user_id", USER_ID)
+			.eq('user_id', USER_ID)
 			.select();
 
 		scrollToBottom();
@@ -385,18 +365,18 @@
 		temp[botId] = [];
 
 		const { data, error } = await supabase
-			.from("messages")
+			.from('messages')
 			.update({
 				msg_json: {
 					messages: {
-						...temp,
-					},
-				},
+						...temp
+					}
+				}
 			})
-			.eq("user_id", USER_ID)
+			.eq('user_id', USER_ID)
 			.select();
 
-		window.location.href = `/chat/${botId}`
+		window.location.href = `/chat/${botId}`;
 	}
 </script>
 
@@ -414,9 +394,7 @@
 	</div>
 
 	<!-- Header -->
-	<div
-		class="sticky top-0 z-50 bg-zinc-900/30 border-b-2 border-white/20 p-4 backdrop-blur-xl"
-	>
+	<div class="sticky top-0 z-50 bg-zinc-900/30 border-b-2 border-white/20 p-4 backdrop-blur-xl">
 		<div class="max-w-7xl mx-auto flex justify-between items-center">
 			<div class="flex-1">
 				<a
@@ -528,7 +506,7 @@
 					onclick={reset}
 				>
 					<span class="font-medium flex justify-center">
-						{reseting ? "Reseting..." : "Reset Chat"}
+						{reseting ? 'Reseting...' : 'Reset Chat'}
 
 						{#if reseting}
 							<div
@@ -542,38 +520,25 @@
 	{/if}
 
 	<!-- Chat Messages -->
-	<div
-		class="flex-1 overflow-y-auto p-4"
-		bind:this={chatContainer}
-		onscroll={handleScroll}
-	>
+	<div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer} onscroll={handleScroll}>
 		<div class="max-w-3xl mx-auto space-y-4 pb-20">
 			{#if loadingChats}
-				<div
-					class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
-				>
+				<div class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4">
 					<div
 						class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"
 					></div>
 				</div>
 			{/if}
 			{#each messages as message}
-				<div
-					class="flex {message.role === 'user'
-						? 'justify-end'
-						: 'justify-start'}"
-					in:scale
-				>
+				<div class="flex {message.role === 'user' ? 'justify-end' : 'justify-start'}" in:scale>
 					<div
 						class="max-w-[80%] {message.role === 'user'
 							? 'bg-white'
 							: 'bg-zinc-800/30'} rounded-xl p-4 border-2 border-white/20"
 					>
 						<p class="">
-							{#if message.role !== "user"}
-								<span
-									class="lg:text-lg md:text-sm text-gray-400"
-								>
+							{#if message.role !== 'user'}
+								<span class="lg:text-lg md:text-sm text-gray-400">
 									{botName}:
 								</span>
 							{/if}
@@ -594,9 +559,7 @@
 			{/each}
 			{#if botThinking}
 				<div class="flex justify-start" in:scale>
-					<div
-						class="max-w-[80%] bg-zinc-800/30 rounded-xl p-4 border-2 border-white/20"
-					>
+					<div class="max-w-[80%] bg-zinc-800/30 rounded-xl p-4 border-2 border-white/20">
 						<div
 							class="col-span-2 sm:col-span-2 lg:col-span-4 flex items-center justify-center p-4"
 						>
@@ -626,17 +589,21 @@
 						bind:value={newMessage}
 						placeholder={botThinking
 							? `${botName} is typing...`
-							: isRecording 
-								? "Listening..."
-								: !isRecording &&  transcribing 
-								? "Transcribing..."
-								: "Type your message..."}
+							: isRecording
+								? 'Listening...'
+								: !isRecording && transcribing
+									? 'Transcribing...'
+									: 'Type your message...'}
 						class="w-full bg-zinc-900/50 border-2 border-white/20 rounded-xl px-3 sm:px-4 py-2.5 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-					>
+					/>
 					{#if transcribing}
 						<div class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex gap-1">
-							<div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-							<div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+							<div
+								class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"
+							></div>
+							<div
+								class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"
+							></div>
 							<div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-bounce"></div>
 						</div>
 					{/if}
@@ -645,15 +612,32 @@
 					type="button"
 					disabled={botThinking}
 					onclick={isRecording ? stopRecording : startRecording}
-					class="bg-zinc-800 text-white  px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-700 disabled:bg-gray-400 disabled:text-gray-800"
+					class="bg-zinc-800 text-white px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-700 disabled:bg-gray-400 disabled:text-gray-800"
 				>
 					{#if isRecording}
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<rect x="6" y="6" width="12" height="12" stroke-width="2"/>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5 sm:h-6 sm:w-6 text-red-500"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<rect x="6" y="6" width="12" height="12" stroke-width="2" />
 						</svg>
 					{:else}
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5 sm:h-6 sm:w-6"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+							/>
 						</svg>
 					{/if}
 				</button>
@@ -663,8 +647,19 @@
 					type="submit"
 					class="bg-white text-black px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-800"
 				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l-2 9 18-9-18-9 2 9zm0 0h8"/>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5 sm:h-6 sm:w-6"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M5 12l-2 9 18-9-18-9 2 9zm0 0h8"
+						/>
 					</svg>
 				</button>
 			</form>
