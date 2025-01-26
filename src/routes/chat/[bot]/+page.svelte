@@ -138,12 +138,10 @@
 	async function transcribe(audioBase64) {
 		try {
 			let base64Data = audioBase64
-			// Remove any data URL prefix if present
-			if (Capacitor.getPlatform() === 'web') {
-				base64Data = audioBase64.includes('base64,')
-					? audioBase64.split('base64,')[1]
-					: audioBase64;
-			}
+			// Remove any data URL prefix if present for ALL platforms
+			base64Data = audioBase64.includes('base64,')
+				? audioBase64.split('base64,')[1]
+				: audioBase64;
 
 			// Convert base64 to Blob
 			const byteCharacters = atob(base64Data);
