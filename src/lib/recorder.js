@@ -1,7 +1,7 @@
 // recorder.js
 import { Capacitor } from '@capacitor/core';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
-import { Clipboard } from '@capacitor/clipboard';
+
 class CrossPlatformRecorder {
 	constructor() {
 		this.mediaRecorder = null;
@@ -75,13 +75,7 @@ class CrossPlatformRecorder {
 				}
 
 				const base64Data = result.value.recordDataBase64;
-                try {
-                    await Clipboard.write({
-                        string: base64Data
-                    })
-                }  catch (error) {
-                    this.addDebugLog(`Copy error: ${error}`, true);
-                }
+            
 
 				this.addDebugLog(`Base64 data: ${base64Data}`);
 
