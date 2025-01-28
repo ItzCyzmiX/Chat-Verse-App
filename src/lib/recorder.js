@@ -12,7 +12,7 @@ class CrossPlatformRecorder {
 
 	addDebugLog(message, isError = false) {
 		const timestamp = new Date().toLocaleTimeString();
-		this.debugLogs.unshift({
+		this.debugLogs.push({
 			timestamp,
 			message: typeof message === 'object' ? JSON.stringify(message, null, 2) : message,
 			isError
@@ -75,15 +75,15 @@ class CrossPlatformRecorder {
 				}
 
 				const base64Data = result.value.recordDataBase64;
-				this.addDebugLog(`Base64 data length: ${base64Data.length}`);
+				this.addDebugLog(`Base64 data: ${base64Data}`);
 
 				// Ensure we're using a supported format for GROQ
-				const blob = this.base64ToBlob(base64Data, 'audio/mp3');
+				const blob = this.base64ToBlob(base64Data, 'audio/webm');
 				this.addDebugLog(`Blob created: ${blob.size} bytes`);
 
 				// Create file with .mp3 extension for better compatibility
-				const file = new File([blob], 'recording.mp3', {
-					type: 'audio/mp3',
+				const file = new File([blob], 'recording.webm', {
+					type: 'audio/webm',
 					lastModified: new Date().getTime()
 				});
 
@@ -103,6 +103,7 @@ class CrossPlatformRecorder {
 				this.mediaRecorder.onstop = () => {
 					try {
 						const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                        
 						const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
 						resolve(file);
 					} catch (error) {
