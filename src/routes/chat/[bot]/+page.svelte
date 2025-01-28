@@ -4,11 +4,7 @@
 	import supabase from '$lib/supabase';
 	import groq from '$lib/groq';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
-	import { Media } from '@capacitor-community/media';
-	import { Capacitor } from '@capacitor/core';
-	import { VoiceRecorder } from 'capacitor-voice-recorder';
+	import { createRecorder } from '$lib/recorder';
 
 	let messages = $state([]);
 	let newMessage = $state('');
@@ -64,192 +60,45 @@
 	});
 
 	let mediaRecorder;
-	let isRecording = $state(false);
-	let audioChunks = $state([]);
-	let transcribing = $state(false);
+	const recorder = createRecorder();
+    
+    let isRecording = $state(false);
+    let audioUrl = $state(null);
+    let transcription = $state('');
+    let isTranscribing = $state(false);
 
-	async function startRecording() {
-		try {
-			const platform = Capacitor.getPlatform();
-			console.log('Platform:', platform);
-
-			if (platform === 'web') {
-				// Web browser recording logic
-				if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-					alert('Your browser does not support audio recording');
-					return;
+    async function toggleRecording() {
+        try {
+            if (!isRecording) {
+				newMessage = '';
+                await recorder.startRecording();
+                isRecording = true;
+            } else {
+				const audioFile = await recorder.stopRecording();
+               
+                
+                // Transcribe the audio
+                isTranscribing = true;
+				const language = localStorage.getItem('preferredLanguage') || 'en';
+                try {
+                    transcription = await recorder.transcribeAudio(audioFile, language);
+                } catch (error) {
+                    console.error('Transcription error:', error);
+                    isTranscribing = false;
+                }
+				newMessage = transcription;
+					
+				if (localStorage.getItem('autoSendVoiceMessage') === 'true') {
+					handleSubmit(new Event('submit'));
 				}
-
-				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				mediaRecorder = new MediaRecorder(stream);
-			} else if (platform === 'android' || platform === 'ios') {
-				try {
-					// Check permission
-					const hasPermission = await VoiceRecorder.hasAudioRecordingPermission();
-					if (!hasPermission.value) {
-						const permission = await VoiceRecorder.requestAudioRecordingPermission();
-						if (!permission.value) {
-							alert('Microphone permission is required for recording');
-							return;
-						}
-					}
-
-					// Start recording
-					await VoiceRecorder.startRecording();
-					console.log('Recording started on mobile');
-				} catch (err) {
-					console.error('Mobile recording error:', err);
-					alert(`Error starting recording: ${err.message}`);
-					return;
-				}
-			}
-
-			isRecording = true;
-			transcribing = true;
-
-			if (platform === 'web') {
-				// Web browser specific setup
-				mediaRecorder.ondataavailable = (event) => {
-					audioChunks.push(event.data);
-				};
-
-				mediaRecorder.onstop = async () => {
-					const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-					audioChunks = [];
-
-					const reader = new FileReader();
-					reader.readAsDataURL(audioBlob);
-					reader.onloadend = async () => {
-						const base64Audio = reader.result.split(',')[1];
-						await processRecording(base64Audio);
-					};
-				};
-
-				mediaRecorder.start();
-			}
-		} catch (error) {
-			console.error('Recording error:', error);
-			alert('Error accessing microphone: ' + error.message);
-			isRecording = false;
-			transcribing = false;
-		}
-	}
-
-	async function transcribe(audioBase64) {
-		try {
-			let base64Data = audioBase64
-			// Remove any data URL prefix if present for ALL platforms
-			base64Data = audioBase64.includes('base64,')
-				? audioBase64.split('base64,')[1]
-				: audioBase64;
-
-			// Convert base64 to Blob
-			const byteCharacters = atob(base64Data);
-			const byteNumbers = new Array(byteCharacters.length);
-			for (let i = 0; i < byteCharacters.length; i++) {
-				byteNumbers[i] = byteCharacters.charCodeAt(i);
-			}
-			const byteArray = new Uint8Array(byteNumbers);
-
-			// Create blob with proper mime type
-			const audioBlob = new Blob([byteArray], { type: 'audio/wav' });
-
-			// Create FormData and append file
-			const formData = new FormData();
-			const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
-
-			const savedLanguage = localStorage.getItem('preferredLanguage') || 'en';
-			console.log(audioFile, base64Data);
-			try {
-				const transcription = await groq.audio.transcriptions.create({
-					file: audioFile,
-					model: 'whisper-large-v3',
-					prompt: 'Specify context or spelling',
-					response_format: 'json',
-					language: savedLanguage,
-					temperature: 0.0
-				});
-
-				return transcription.text;
-			} catch (transcriptionError) {
-				console.error('Transcription API error:', transcriptionError);
-				throw new Error('Failed to transcribe audio ' + transcriptionError.message);
-			}
-		} catch (error) {
-			console.error('Transcription processing error:', error);
-			throw error;
-		}
-	}
-
-	async function processRecording(base64Audio) {
-		try {
-			console.log('Processing recording...');
-
-			const pureBase64 = base64Audio.includes('base64,') 
-      ? base64Audio.split('base64,')[1]
-      : base64Audio;
-
-    // Validate after extraction
-    if (!pureBase64.match(/^[A-Za-z0-9+/]+={0,2}$/)) {
-      console.error('Invalid base64 after extraction:', pureBase64.slice(0, 50));
-      throw new Error('Invalid base64 encoding after processing');
+                isTranscribing = false;
+				isRecording = false;
+            }
+        } catch (error) {
+            console.error('Recording error:', error);
+            isRecording = false;
+        } 
     }
-
-    transcribing = true;
-    const text = await transcribe(pureBase64); 
-
-			if (!text) {
-				throw new Error('No transcription result received');
-			}
-
-			console.log('Transcription result:', text);
-			newMessage = text;
-
-			const savedAutoSend = localStorage.getItem('autoSendVoiceMessage');
-			const shouldAutoSend = savedAutoSend === 'true';
-			if (shouldAutoSend) {
-				handleSubmit(new Event('submit'));
-			}
-		} catch (error) {
-			console.error('Processing error:', error);
-			alert('Error processing audio: ' + (error.message || 'Unknown error'));
-		} finally {
-			transcribing = false;
-		}
-	}
-
-	// For mobile recording, modify the stopRecording function:
-	async function stopRecording() {
-		try {
-			const platform = Capacitor.getPlatform();
-			console.log('Stopping recording on platform:', platform);
-
-			if (platform === 'web') {
-				if (mediaRecorder && isRecording) {
-					mediaRecorder.stop();
-					mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-				}
-			} else if (platform === 'android' || platform === 'ios') {
-				try {
-					const recordingResult = await VoiceRecorder.stopRecording();
-					if (!recordingResult?.value?.recordDataBase64) {
-						throw new Error('Invalid recording data format');
-					}
-
-					await processRecording(recordingResult.value.recordDataBase64);
-				} catch (err) {
-					console.error('Mobile stop recording error:', err);
-					alert(`Error stopping recording: ${err.message}`);
-				}
-			}
-		} catch (error) {
-			console.error('Error stopping recording:', error);
-			alert('Error stopping recording: ' + error.message);
-		} finally {
-			isRecording = false;
-		}
-	}
-
 	onMount(async () => {
 		let { data, error } = await supabase.from('chat_bots').select('*').eq('id', botId);
 
@@ -579,19 +428,19 @@
 			<form onsubmit={handleSubmit} class="flex gap-2 sm:gap-4">
 				<div class="relative flex-1">
 					<input
-						disabled={botThinking || transcribing || isRecording}
+						disabled={botThinking || isTranscribing || isRecording}
 						type="text"
 						bind:value={newMessage}
 						placeholder={botThinking
 							? `${botName} is typing...`
 							: isRecording
 								? 'Listening...'
-								: !isRecording && transcribing
+								: !isRecording && isTranscribing
 									? 'Transcribing...'
 									: 'Type your message...'}
 						class="w-full bg-zinc-900/50 border-2 border-white/20 rounded-xl px-3 sm:px-4 py-2.5 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
 					/>
-					{#if transcribing}
+					{#if isTranscribing}
 						<div class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex gap-1">
 							<div
 								class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"
@@ -606,7 +455,7 @@
 				<button
 					type="button"
 					disabled={botThinking}
-					onclick={isRecording ? stopRecording : startRecording}
+					onclick={toggleRecording}
 					class="bg-zinc-800 text-white px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-700 disabled:bg-gray-400 disabled:text-gray-800"
 				>
 					{#if isRecording}
