@@ -383,7 +383,7 @@
 			</div>
 		</div>
 	{/if}
-	<button onclick={() => showDebug = !showDebug}>
+	<button class="bg-zinc-800/30 border-2 border-white/20 rounded-xl p-2 text-white hover:bg-zinc-900/30 transition-all duration-200 flex items-center gap-2" onclick={() => showDebug = !showDebug}>
         {showDebug ? 'Hide Debug' : 'Show Debug'}
     </button>
 
