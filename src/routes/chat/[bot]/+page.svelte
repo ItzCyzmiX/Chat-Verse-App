@@ -458,7 +458,7 @@
 				</div>
 				<button
 					type="button"
-					disabled={isRecording || isTranscribing || botThinking}
+					disabled={isTranscribing || botThinking}
 					onclick={toggleRecording}
 					class="bg-zinc-800 text-white px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-700 disabled:bg-gray-400 disabled:text-gray-800"
 				>
