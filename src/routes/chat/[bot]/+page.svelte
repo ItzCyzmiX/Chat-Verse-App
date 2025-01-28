@@ -66,7 +66,25 @@
     let audioUrl = $state(null);
     let transcription = $state('');
     let isTranscribing = $state(false);
+	let error = $state(null);
+    let showDebug = $state(false);
+    let debugLogs = $state([]);
 
+
+
+    function updateDebugLogs() {
+        debugLogs = recorder.getDebugLogs();
+    }
+
+    // Update logs every second while recording or transcribing
+    $effect(() => {
+        if (isRecording || isTranscribing) {
+            const interval = setInterval(updateDebugLogs, 1000);
+            return () => clearInterval(interval);
+        }
+    });
+
+	
     async function toggleRecording() {
         try {
             if (!isRecording) {
@@ -83,7 +101,8 @@
                 try {
                     transcription = await recorder.transcribeAudio(audioFile, language);
                 } catch (error) {
-                    throw new Error('Transcription error:', error);
+					updateDebugLogs();
+                    error = `Transcription error: ${error.message}`;
                     isTranscribing = false;
                 }
 				newMessage = transcription;
@@ -93,9 +112,11 @@
 				}
                 isTranscribing = false;
 				isRecording = false;
+				updateDebugLogs();
             }
         } catch (error) {
-            throw new Error('Recording error:', error);
+			updateDebugLogs();
+            error = `Recording error: ${error.message}`;
             isRecording = false;
         } 
     }
@@ -362,7 +383,21 @@
 			</div>
 		</div>
 	{/if}
+	<button onclick={() => showDebug = !showDebug}>
+        {showDebug ? 'Hide Debug' : 'Show Debug'}
+    </button>
 
+    {#if showDebug}
+        <div class="debug-container">
+            <h3>Debug Logs</h3>
+            {#each debugLogs as log}
+                <div class="debug-log" class:error={log.isError}>
+                    <span class="timestamp">{log.timestamp}</span>
+                    <span class="message">{log.message}</span>
+                </div>
+            {/each}
+        </div>
+    {/if}
 	<!-- Chat Messages -->
 	<div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer} onscroll={handleScroll}>
 		<div class="max-w-3xl mx-auto space-y-4 pb-20">
@@ -514,3 +549,44 @@
 		</div>
 	</div>
 </div>
+
+
+<style>
+    .container {
+        padding: 1rem;
+    }
+    
+    .debug-container {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 4px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .debug-log {
+        padding: 0.5rem;
+        border-bottom: 1px solid #ddd;
+        font-family: monospace;
+        white-space: pre-wrap;
+    }
+    
+    .debug-log.error {
+        color: red;
+        background: #fff0f0;
+    }
+    
+    .timestamp {
+        color: #666;
+        margin-right: 1rem;
+    }
+    
+    .error {
+        color: red;
+        padding: 0.5rem;
+        margin: 0.5rem 0;
+        background: #fff0f0;
+        border-radius: 4px;
+    }
+</style>

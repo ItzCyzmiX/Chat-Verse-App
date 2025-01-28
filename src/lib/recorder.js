@@ -10,7 +10,20 @@ class CrossPlatformRecorder {
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.isRecording = false;
-        
+        this.debugLogs = [];
+    }
+
+    addDebugLog(message, isError = false) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.debugLogs.unshift({
+            timestamp,
+            message: typeof message === 'object' ? JSON.stringify(message, null, 2) : message,
+            isError
+        });
+        // Keep only last 20 logs
+        if (this.debugLogs.length > 20) {
+            this.debugLogs.pop();
+        }
     }
 
     async getPermission() {
@@ -55,10 +68,26 @@ class CrossPlatformRecorder {
         this.isRecording = false;
 
         if (Capacitor.isNativePlatform()) {
-            const result = await VoiceRecorder.stopRecording();
-            // Convert base64 to File object
-            const blob = this.base64ToBlob(result.value.recordDataBase64, 'audio/wav');
-            return new File([blob], 'recording.wav', { type: 'audio/wav' });
+            try {
+                this.addDebugLog('Stopping native recording...');
+                const result = await VoiceRecorder.stopRecording();
+                this.addDebugLog('Recording stopped, processing data...');
+    
+                if (!result.value || !result.value.recordDataBase64) {
+                    throw new Error('Invalid recording data received from device');
+                }
+    
+                const base64Data = result.value.recordDataBase64;
+                this.addDebugLog(`Base64 data length: ${base64Data.length}`);
+                
+                const blob = this.base64ToBlob(base64Data, 'audio/wav');
+                this.addDebugLog(`Blob created: ${blob.size} bytes`);
+    
+                return new File([blob], 'recording.wav', { type: 'audio/wav' });
+            } catch (error) {
+                this.addDebugLog(`Error stopping recording: ${error.message}`, true);
+                throw error;
+            }
         } else {
             return new Promise((resolve, reject) => {
                 if (!this.mediaRecorder) {
@@ -105,9 +134,11 @@ class CrossPlatformRecorder {
                 language: language,
                 temperature: 0.0
             });
+           
             return response.text;
         } catch (error) {
-            throw new Error(`Transcription failed: ${error.message}`);
+            this.addDebugLog(`Transcription error: ${error.message}`, true);
+            throw error;
         }
     }
 
@@ -117,6 +148,14 @@ class CrossPlatformRecorder {
             return status.value.isRecording;
         }
         return this.isRecording;
+    }
+
+    getDebugLogs() {
+        return this.debugLogs;
+    }
+
+    clearDebugLogs() {
+        this.debugLogs = [];
     }
 }
 
