@@ -1,7 +1,7 @@
 // recorder.js
 import { Capacitor } from '@capacitor/core';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
-
+import { Clipboard } from '@capacitor/clipboard';
 class CrossPlatformRecorder {
 	constructor() {
 		this.mediaRecorder = null;
@@ -75,6 +75,14 @@ class CrossPlatformRecorder {
 				}
 
 				const base64Data = result.value.recordDataBase64;
+                try {
+                    await Clipboard.write({
+                        string: base64Data
+                    })
+                }  catch (error) {
+                    this.addDebugLog(`Copy error: ${error}`, true);
+                }
+
 				this.addDebugLog(`Base64 data: ${base64Data}`);
 
 				// Ensure we're using a supported format for GROQ
@@ -100,10 +108,11 @@ class CrossPlatformRecorder {
 					return;
 				}
 
-				this.mediaRecorder.onstop = () => {
+				this.mediaRecorder.onstop = async () => {
 					try {
 						const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
-                        
+                        let base = await this.blobToBase64(blob)
+                        console.log(base)
 						const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
 						resolve(file);
 					} catch (error) {
@@ -130,6 +139,15 @@ class CrossPlatformRecorder {
 		return new Blob([byteArray], { type: mimeType });
 	}
 
+    async blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = (err) => reject(err);
+          reader.readAsDataURL(blob);
+        });
+    }
+
 	async transcribeAudio(audioFile, language) {
 		try {
 			try {
@@ -142,6 +160,7 @@ class CrossPlatformRecorder {
 				const formData = new FormData();
 				formData.append('file', audioFile);
 				formData.append('model', 'whisper-large-v3');
+                formData.append('language', language)
 
 				this.addDebugLog('Sending request to GROQ API...');
 
