@@ -83,7 +83,7 @@
                 try {
                     transcription = await recorder.transcribeAudio(audioFile, language);
                 } catch (error) {
-                    console.error('Transcription error:', error);
+                    throw new Error('Transcription error:', error);
                     isTranscribing = false;
                 }
 				newMessage = transcription;
@@ -95,7 +95,7 @@
 				isRecording = false;
             }
         } catch (error) {
-            console.error('Recording error:', error);
+            throw new Error('Recording error:', error);
             isRecording = false;
         } 
     }
@@ -431,13 +431,17 @@
 						disabled={botThinking || isTranscribing || isRecording}
 						type="text"
 						bind:value={newMessage}
-						placeholder={botThinking
-							? `${botName} is typing...`
-							: isRecording
-								? 'Listening...'
-								: !isRecording && isTranscribing
-									? 'Transcribing...'
-									: 'Type your message...'}
+						placeholder={() => {
+							if (botThinking) {
+								return `${botName} is typing...`;
+							} else if (isRecording) {
+								return 'Listening...';
+							} else if (isTranscribing) {
+								return 'Transcribing...';
+							} else {
+								return 'Type your message...';
+							}
+						}}
 						class="w-full bg-zinc-900/50 border-2 border-white/20 rounded-xl px-3 sm:px-4 py-2.5 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
 					/>
 					{#if isTranscribing}
@@ -454,7 +458,7 @@
 				</div>
 				<button
 					type="button"
-					disabled={botThinking}
+					disabled={isRecording || isTranscribing || botThinking}
 					onclick={toggleRecording}
 					class="bg-zinc-800 text-white px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-700 disabled:bg-gray-400 disabled:text-gray-800"
 				>
@@ -487,7 +491,7 @@
 				</button>
 				<button
 					aria-label="record"
-					disabled={botThinking}
+					disabled={botThinking || isTranscribing || isRecording}
 					type="submit"
 					class="bg-white text-black px-4 py-2 sm:px-4 sm:py-2 rounded-xl font-medium transition-colors hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-800"
 				>
