@@ -431,7 +431,7 @@
 						disabled={botThinking || isTranscribing || isRecording}
 						type="text"
 						bind:value={newMessage}
-						placeholder={() => {
+						placeholder={(() => {
 							if (botThinking) {
 								return `${botName} is typing...`;
 							} else if (isRecording) {
@@ -441,7 +441,7 @@
 							} else {
 								return 'Type your message...';
 							}
-						}}
+						})()}
 						class="w-full bg-zinc-900/50 border-2 border-white/20 rounded-xl px-3 sm:px-4 py-2.5 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-white/40 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
 					/>
 					{#if isTranscribing}

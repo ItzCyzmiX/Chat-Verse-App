@@ -10,10 +10,10 @@ class CrossPlatformRecorder {
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.isRecording = false;
-        this.initialize();
+        
     }
 
-    async initialize() {
+    async getPermission() {
         if (Capacitor.isNativePlatform()) {
             const { value } = await VoiceRecorder.hasAudioRecordingPermission();
             if (!value) {
@@ -24,6 +24,7 @@ class CrossPlatformRecorder {
 
     async startRecording() {
         if (this.isRecording) return;
+        await this.getPermission();
         this.isRecording = true;
 
         if (Capacitor.isNativePlatform()) {
