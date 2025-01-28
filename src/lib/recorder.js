@@ -87,7 +87,9 @@ class CrossPlatformRecorder {
 
 				// Ensure we're using a supported format for GROQ
 				const blob = this.base64ToBlob(base64Data, 'audio/webm');
-				this.addDebugLog(`Blob created: ${blob.size} bytes`);
+                let BlobBase64 = await this.blobToBase64(blob)
+
+				this.addDebugLog(`Blob created: ${blob.size} bytes, with base: ${BlobBase64}`);
 
 				// Create file with .mp3 extension for better compatibility
 				const file = new File([blob], 'recording.webm', {
