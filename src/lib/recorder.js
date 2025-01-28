@@ -140,7 +140,7 @@ class CrossPlatformRecorder {
 
 				const formData = new FormData();
 				formData.append('file', audioFile);
-				formData.append('model', 'whisper-1');
+				formData.append('model', 'whisper-large-v3');
 
 				this.addDebugLog('Sending request to GROQ API...');
 
