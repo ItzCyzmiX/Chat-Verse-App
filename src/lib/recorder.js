@@ -85,14 +85,14 @@ class CrossPlatformRecorder {
 
 				this.addDebugLog(`Blob created: ${blob.size} bytes, with base: ${BlobBase64}`);
 
-				// Create file with .mp3 extension for better compatibility
-				const file = new File([blob], 'recording.webm', {
-					type: 'audio/webm',
-					lastModified: new Date().getTime()
-				});
+				// // Create file with .mp3 extension for better compatibility
+				// const file = new File([blob], 'recording.webm', {
+				// 	type: 'audio/webm',
+				// 	lastModified: new Date().getTime()
+				// });
 
-				this.addDebugLog(`File created: ${file.name} (${file.size} bytes)`);
-				return file;
+				// this.addDebugLog(`File created: ${file.name} (${file.size} bytes)`);
+				return blob;
 			} catch (error) {
 				this.addDebugLog(`Error stopping recording: ${error.message}`, true);
 				throw error;
@@ -148,10 +148,10 @@ class CrossPlatformRecorder {
 		try {
 			try {
 				this.addDebugLog(`Starting transcription process`);
-				this.addDebugLog(`Audio file details:
-            Name: ${audioFile.name}
-            Size: ${audioFile.size} bytes
-            Type: ${audioFile.type}`);
+			// 	this.addDebugLog(`Audio file details:
+            // Name: ${audioFile.name}
+            // Size: ${audioFile.size} bytes
+            // Type: ${audioFile.type}`);
 
 				const formData = new FormData();
 				formData.append('file', audioFile);
