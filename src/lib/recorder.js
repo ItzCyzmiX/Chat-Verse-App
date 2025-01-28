@@ -1,247 +1,224 @@
-// recorder.js
 import { Capacitor } from '@capacitor/core';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
 
 class CrossPlatformRecorder {
-	constructor() {
-		this.mediaRecorder = null;
-		this.audioChunks = [];
-		this.isRecording = false;
-		this.debugLogs = [];
-	}
+    constructor() {
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+        this.isRecording = false;
+		this.groqApiKey = import.meta.env.VITE_GROQ_API_KEY
+        this.debugLogs = [];
+    }
 
-	addDebugLog(message, isError = false) {
-		const timestamp = new Date().toLocaleTimeString();
-		this.debugLogs.push({
-			timestamp,
-			message: typeof message === 'object' ? JSON.stringify(message, null, 2) : message,
-			isError
-		});
-		// Keep only last 20 logs
-		if (this.debugLogs.length > 20) {
-			this.debugLogs.pop();
-		}
-	}
+    addDebugLog(message, isError = false) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.debugLogs.unshift({
+            timestamp,
+            message: typeof message === 'object' ? JSON.stringify(message, null, 2) : message,
+            isError
+        });
+        if (this.debugLogs.length > 20) this.debugLogs.pop();
+    }
 
-	async getPermission() {
-		if (Capacitor.isNativePlatform()) {
-			const { value } = await VoiceRecorder.hasAudioRecordingPermission();
-			if (!value) {
-				await VoiceRecorder.requestAudioRecordingPermission();
-			}
-		}
-	}
+    async checkPermitions() {
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const { value } = await VoiceRecorder.hasAudioRecordingPermission();
+                if (!value) {
+                    await VoiceRecorder.requestAudioRecordingPermission();
+                }
+            } catch (error) {
+                this.addDebugLog(`Permission error: ${error.message}`, true);
+                throw error;
+            }
+        }
+    }
 
-	async startRecording() {
-		if (this.isRecording) return;
-		await this.getPermission();
+    async startRecording() {
+        if (this.isRecording) return;
+
+		await this.checkPermitions()
+		
+		
 		this.isRecording = true;
 
-		if (Capacitor.isNativePlatform()) {
-			await VoiceRecorder.startRecording();
-		} else {
-			try {
-				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				this.mediaRecorder = new MediaRecorder(stream);
-				this.audioChunks = [];
 
-				this.mediaRecorder.ondataavailable = (event) => {
-					this.audioChunks.push(event.data);
-				};
+        if (Capacitor.isNativePlatform()) {
+            try {
+                await VoiceRecorder.startRecording();
+                this.addDebugLog('Native recording started');
+            } catch (error) {
+                this.isRecording = false;
+                this.addDebugLog(`Native recording error: ${error.message}`, true);
+                throw error;
+            }
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                this.audioChunks = [];
 
-				this.mediaRecorder.start();
-			} catch (error) {
-				this.isRecording = false;
-				throw new Error(`Failed to start web recording: ${error}`);
-			}
-		}
-	}
+                this.mediaRecorder.ondataavailable = (event) => {
+                    this.audioChunks.push(event.data);
+                };
 
-	async stopRecording() {
-		if (!this.isRecording) {
-			throw new Error('No recording in progress');
-		}
+                this.mediaRecorder.start();
+                this.addDebugLog('Web recording started');
+            } catch (error) {
+                this.isRecording = false;
+                throw error;
+            }
+        }
+    }
 
-		this.isRecording = false;
+    async stopRecording() {
+        if (!this.isRecording) {
+            throw new Error('No recording in progress');
+        }
 
-		if (Capacitor.isNativePlatform()) {
-			try {
-				this.addDebugLog('Stopping native recording...');
-				const result = await VoiceRecorder.stopRecording();
-				this.addDebugLog('Recording stopped, processing data...');
+        this.isRecording = false;
 
-				if (!result.value || !result.value.recordDataBase64) {
-					throw new Error('Invalid recording data received from device');
-				}
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const result = await VoiceRecorder.stopRecording();
+                this.addDebugLog('Native recording stopped');
 
-				const base64Data = result.value.recordDataBase64;
-            
+                if (!result.value || !result.value.recordDataBase64) {
+                    throw new Error('Invalid recording data received from device');
+                }
 
-				this.addDebugLog(`Base64 data: ${base64Data}`);
+                // For native recordings, use the base64 directly since it's already in the correct format
+                const base64Data = result.value.recordDataBase64;
+                // Validate the base64 data
+                if (!this.isValidBase64(base64Data)) {
+                    throw new Error('Invalid base64 data received from device');
+                }
 
-				// Ensure we're using a supported format for GROQ
-				const blob = this.base64ToBlob(base64Data, 'audio/webm');
-                let BlobBase64 = await this.blobToBase64(blob)
+                this.addDebugLog(`Native recording base64 length: ${base64Data.length}`);
+                return {
+                    base64Data,
+                    mimeType: 'audio/wav'  // Native recordings are typically WAV
+                };
+            } catch (error) {
+                this.addDebugLog(`Error in native recording: ${error.message}`, true);
+                throw error;
+            }
+        } else {
+            return new Promise((resolve, reject) => {
+                try {
+                    this.mediaRecorder.onstop = async () => {
+                        try {
+                            const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                            const base64Data = await this.blobToBase64(blob);
+                            this.addDebugLog(`Web recording base64 length: ${base64Data.length}`);
+                            resolve({
+                                base64Data,
+                                mimeType: 'audio/webm'
+                            });
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
 
-				this.addDebugLog(`Blob created: ${blob.size} bytes, with base: ${BlobBase64}`);
+                    this.mediaRecorder.stop();
+                    const tracks = this.mediaRecorder.stream.getTracks();
+                    tracks.forEach(track => track.stop());
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+    }
 
-				// // Create file with .mp3 extension for better compatibility
-				// const file = new File([blob], 'recording.webm', {
-				// 	type: 'audio/webm',
-				// 	lastModified: new Date().getTime()
-				// });
-
-				// this.addDebugLog(`File created: ${file.name} (${file.size} bytes)`);
-				return blob;
-			} catch (error) {
-				this.addDebugLog(`Error stopping recording: ${error.message}`, true);
-				throw error;
-			}
-		} else {
-			return new Promise((resolve, reject) => {
-				if (!this.mediaRecorder) {
-					reject(new Error('MediaRecorder not initialized'));
-					return;
-				}
-
-				this.mediaRecorder.onstop = async () => {
-					try {
-						const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
-                        let base = await this.blobToBase64(blob)
-                        console.log(base)
-						const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
-						resolve(file);
-					} catch (error) {
-						reject(error);
-					}
-				};
-
-				this.mediaRecorder.stop();
-				const tracks = this.mediaRecorder.stream.getTracks();
-				tracks.forEach((track) => track.stop());
-			});
-		}
-	}
-
-	base64ToBlob(base64, mimeType) {
-		const byteCharacters = atob(base64);
-		const byteNumbers = new Array(byteCharacters.length);
-
-		for (let i = 0; i < byteCharacters.length; i++) {
-			byteNumbers[i] = byteCharacters.charCodeAt(i);
-		}
-
-		const byteArray = new Uint8Array(byteNumbers);
-		return new Blob([byteArray], { type: mimeType });
-	}
+    isValidBase64(str) {
+        if (typeof str !== 'string') return false;
+        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+        return base64Regex.test(str) && str.length > 0;
+    }
 
     async blobToBase64(blob) {
         return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = (err) => reject(err);
-          reader.readAsDataURL(blob);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (typeof reader.result === 'string') {
+                    // Extract only the base64 data, removing the data URL prefix
+                    const base64Data = reader.result.split(',')[1];
+                    resolve(base64Data);
+                } else {
+                    reject(new Error('Failed to convert blob to base64'));
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
         });
     }
 
-	async transcribeAudio(audioFile, language) {
-		try {
-			try {
-				this.addDebugLog(`Starting transcription process`);
-			// 	this.addDebugLog(`Audio file details:
-            // Name: ${audioFile.name}
-            // Size: ${audioFile.size} bytes
-            // Type: ${audioFile.type}`);
+    base64ToBlob(base64Data, mimeType) {
+        try {
+            // Convert base64 to raw binary data
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            return new Blob([bytes], { type: mimeType });
+        } catch (error) {
+            this.addDebugLog(`Error converting base64 to blob: ${error.message}`, true);
+            throw error;
+        }
+    }
 
-				const formData = new FormData();
-				formData.append('file', audioFile);
-				formData.append('model', 'whisper-large-v3');
-                formData.append('language', language)
+    async transcribeAudio(audioData) {
+        if (!this.groqApiKey) {
+            throw new Error('GROQ API key is required for transcription');
+        }
 
-				this.addDebugLog('Sending request to GROQ API...');
+        try {
+            // Create a blob from the base64 data
+            const audioBlob = this.base64ToBlob(audioData.base64Data, audioData.mimeType);
+            
+            // Create a File object from the blob
+            const audioFile = new File([audioBlob], 
+                `recording.${audioData.mimeType.split('/')[1]}`,
+                { type: audioData.mimeType }
+            );
 
-				const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-						Accept: 'application/json'
-					},
-					body: formData
-				});
+            this.addDebugLog(`Preparing transcription request:
+                File size: ${audioFile.size} bytes
+                File type: ${audioFile.type}`);
 
-				this.addDebugLog(`GROQ API response status: ${response.status}`);
+            const formData = new FormData();
+            formData.append('file', audioFile);
+            formData.append('model', 'whisper-large-v3');
 
-				let responseText;
-				try {
-					// Try to get response as text first
-					responseText = await response.text();
-					this.addDebugLog(`Raw response: ${responseText}`);
-				} catch (e) {
-					this.addDebugLog(`Could not read response text: ${e.message}`, true);
-				}
+            const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.groqApiKey}`
+                },
+                body: formData
+            });
 
-				if (!response.ok) {
-					// Try to parse the error response as JSON
-					let errorDetail = responseText;
-					try {
-						const errorJson = JSON.parse(responseText);
-						errorDetail = errorJson.error?.message || errorJson.message || responseText;
-					} catch (e) {
-						// If parsing fails, use the raw text
-					}
-					this.addDebugLog(`GROQ API error: ${errorDetail}`, true);
-					throw new Error(`GROQ API error: ${response.status} - ${errorDetail}`);
-				}
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`GROQ API error: ${response.status} - ${errorText}`);
+            }
 
-				let result;
-				try {
-					result = JSON.parse(responseText);
-				} catch (e) {
-					this.addDebugLog(`Error parsing JSON response: ${e.message}`, true);
-					throw new Error('Invalid JSON response from GROQ API');
-				}
+            const result = await response.json();
+            return result.text;
+        } catch (error) {
+            this.addDebugLog(`Transcription error: ${error.message}`, true);
+            throw error;
+        }
+    }
 
-				if (!result.text) {
-					this.addDebugLog('No transcription text in response', true);
-					throw new Error('No transcription text in response');
-				}
-
-				this.addDebugLog('Transcription completed successfully');
-				return result.text;
-			} catch (error) {
-				this.addDebugLog(`Transcription error: ${error.message}`, true);
-
-				// If it's a network error, add more details
-				if (error instanceof TypeError && error.message === 'Failed to fetch') {
-					this.addDebugLog('Network error - possible causes:', true);
-					this.addDebugLog('- Invalid API key', true);
-					this.addDebugLog('- No internet connection', true);
-					this.addDebugLog('- GROQ API service unavailable', true);
-				}
-
-				throw error;
-			}
-		} catch (error) {
-			this.addDebugLog(`Transcription error: ${error.message}`, true);
-			throw error;
-		}
-	}
-
-	async isRecordingInProgress() {
-		if (Capacitor.isNativePlatform()) {
-			const status = await VoiceRecorder.getCurrentStatus();
-			return status.value.isRecording;
-		}
-		return this.isRecording;
-	}
-
-	getDebugLogs() {
-		return this.debugLogs;
-	}
-
-	clearDebugLogs() {
-		this.debugLogs = [];
-	}
+    getDebugLogs() {
+        return this.debugLogs;
+    }
 }
 
 export const createRecorder = () => new CrossPlatformRecorder();
