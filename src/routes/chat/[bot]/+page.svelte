@@ -383,21 +383,6 @@
 			</div>
 		</div>
 	{/if}
-	<button class="bg-zinc-800/30 border-2 border-white/20 rounded-xl p-2 text-white hover:bg-zinc-900/30 transition-all duration-200 flex items-center gap-2" onclick={() => showDebug = !showDebug}>
-        {showDebug ? 'Hide Debug' : 'Show Debug'}
-    </button>
-
-    {#if showDebug}
-        <div class="debug-container">
-            <h3>Debug Logs</h3>
-            {#each debugLogs as log}
-                <div class="debug-log" class:error={log.isError}>
-                    <span class="timestamp">{log.timestamp}</span>
-                    <span class="message">{log.message}</span>
-                </div>
-            {/each}
-        </div>
-    {/if}
 	<!-- Chat Messages -->
 	<div class="flex-1 overflow-y-auto p-4" bind:this={chatContainer} onscroll={handleScroll}>
 		<div class="max-w-3xl mx-auto space-y-4 pb-20">
