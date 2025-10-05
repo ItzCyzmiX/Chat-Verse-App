@@ -430,7 +430,7 @@
 							<button
 								aria-label="Read aloud"
 								class="absolute top-2 right-2 bg-zinc-900/60 border border-white/20 rounded-full p-2 text-white hover:bg-zinc-700 transition-all duration-200 flex items-center"
-								on:click={() => speak(message.content)}
+								onclick={async () => await speak(message.content)}
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
