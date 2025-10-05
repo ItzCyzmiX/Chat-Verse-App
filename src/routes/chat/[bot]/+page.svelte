@@ -422,7 +422,7 @@
 							>
 								{message.content}
 							</span>
-							<span class="text-xs text-zinc-400 mt-1">
+							<span class="text-xs text-zinc-400 ">
 								{new Date(message.timestamp).toLocaleTimeString()}
 							</span>
 						</p>
