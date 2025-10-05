@@ -1,6 +1,5 @@
 import { Capacitor } from '@capacitor/core';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
-
 class CrossPlatformRecorder {
     constructor() {
         this.mediaRecorder = null;

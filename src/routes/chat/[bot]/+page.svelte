@@ -402,13 +402,13 @@
 				</div>
 			{/if}
 			{#each messages as message, i}
-				<div class="flex {message.role === 'user' ? 'justify-end' : 'justify-start'}" in:scale>
+				<div class=" flex {message.role === 'user' ? 'justify-end' : 'justify-start'}" in:scale>
 					<div
 						class="max-w-[80%] {message.role === 'user'
 							? 'bg-white'
 							: 'bg-zinc-800/30'} rounded-xl p-4 border-2 border-white/20 relative"
 					>
-						<p class="">
+						<p class="mb-4">
 							{#if message.role !== 'user'}
 								<span class="lg:text-lg md:text-sm text-gray-400">
 									{botName}:
@@ -422,14 +422,15 @@
 							>
 								{message.content}
 							</span>
+							<span class="text-xs text-zinc-400 mt-1">
+								{new Date(message.timestamp).toLocaleTimeString()}
+							</span>
 						</p>
-						<p class="text-xs text-zinc-400 mt-1">
-							{new Date(message.timestamp).toLocaleTimeString()}
-						</p>
+
 						{#if message.role !== 'user'}
 							<button
 								aria-label="Read aloud"
-								class="absolute top-2 right-2 bg-zinc-900/60 border border-white/20 rounded-full p-2 text-white hover:bg-zinc-700 transition-all duration-200 flex items-center"
+								class="absolute bottom-2 right-2 bg-zinc-900/60 border border-white/20 rounded-full p-2 text-white hover:bg-zinc-700 transition-all duration-200 flex items-center"
 								onclick={async () => await speak(message.content)}
 							>
 								<svg
