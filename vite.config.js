@@ -4,6 +4,9 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 	build: {
-		outDir: "build"
+		outDir: "build",
+		rollupOptions: {
+			external: ['capacitor-voice-recorder']
+		}
 	}
 });

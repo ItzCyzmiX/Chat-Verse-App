@@ -61,65 +61,73 @@
 
 	let mediaRecorder;
 	const recorder = createRecorder();
-    
-    let isRecording = $state(false);
-    let audioUrl = $state(null);
-    let transcription = $state('');
-    let isTranscribing = $state(false);
+
+	let isRecording = $state(false);
+	let audioUrl = $state(null);
+	let transcription = $state('');
+	let isTranscribing = $state(false);
 	let error = $state(null);
-    let showDebug = $state(false);
-    let debugLogs = $state([]);
+	let showDebug = $state(false);
+	let debugLogs = $state([]);
 
+	async function speak(txt) {
+		puter.ai
+			.txt2speech(txt, {
+				voice: 'Joanna',
+				engine: 'neural',
+				language: 'en-US'
+			})
+			.then((audio) => {
+				audio.play();
+			});
+	}
 
+	function updateDebugLogs() {
+		debugLogs = recorder.getDebugLogs();
+	}
 
-    function updateDebugLogs() {
-        debugLogs = recorder.getDebugLogs();
-    }
+	// Update logs every second while recording or transcribing
+	$effect(() => {
+		if (isRecording || isTranscribing) {
+			const interval = setInterval(updateDebugLogs, 1000);
+			return () => clearInterval(interval);
+		}
+	});
 
-    // Update logs every second while recording or transcribing
-    $effect(() => {
-        if (isRecording || isTranscribing) {
-            const interval = setInterval(updateDebugLogs, 1000);
-            return () => clearInterval(interval);
-        }
-    });
-
-	
-    async function toggleRecording() {
-        try {
-            if (!isRecording) {
+	async function toggleRecording() {
+		try {
+			if (!isRecording) {
 				newMessage = '';
-                await recorder.startRecording();
-                isRecording = true;
-            } else {
+				await recorder.startRecording();
+				isRecording = true;
+			} else {
 				const audioFile = await recorder.stopRecording();
-               
-                
-                // Transcribe the audio
-                isTranscribing = true;
+
+				// Transcribe the audio
+				isTranscribing = true;
 				const language = localStorage.getItem('preferredLanguage') || 'en';
-                try {
-                    transcription = await recorder.transcribeAudio(audioFile, language);
-                } catch (error) {
+				try {
+					transcription = await recorder.transcribeAudio(audioFile, language);
+				} catch (error) {
 					updateDebugLogs();
-                    error = `Transcription error: ${error.message}`;
-                    isTranscribing = false;
-                }
+					error = `Transcription error: ${error.message}`;
+					isTranscribing = false;
+				}
 				newMessage = transcription;
-					
+
 				if (localStorage.getItem('autoSendVoiceMessage') === 'true') {
 					handleSubmit(new Event('submit'));
 				}
-                isTranscribing = false;
+				isTranscribing = false;
 				isRecording = false;
 				updateDebugLogs();
-            }
-        } catch (error) {
+			}
+		} catch (error) {
 			updateDebugLogs();
-            error = `Recording error: ${error.message}`;
-            isRecording = false;
-        } 
-    }
+			error = `Recording error: ${error.message}`;
+			isRecording = false;
+		}
+	}
 	onMount(async () => {
 		let { data, error } = await supabase.from('chat_bots').select('*').eq('id', botId);
 
@@ -393,12 +401,12 @@
 					></div>
 				</div>
 			{/if}
-			{#each messages as message}
+			{#each messages as message, i}
 				<div class="flex {message.role === 'user' ? 'justify-end' : 'justify-start'}" in:scale>
 					<div
 						class="max-w-[80%] {message.role === 'user'
 							? 'bg-white'
-							: 'bg-zinc-800/30'} rounded-xl p-4 border-2 border-white/20"
+							: 'bg-zinc-800/30'} rounded-xl p-4 border-2 border-white/20 relative"
 					>
 						<p class="">
 							{#if message.role !== 'user'}
@@ -418,6 +426,40 @@
 						<p class="text-xs text-zinc-400 mt-1">
 							{new Date(message.timestamp).toLocaleTimeString()}
 						</p>
+						{#if message.role !== 'user'}
+							<button
+								aria-label="Read aloud"
+								class="absolute top-2 right-2 bg-zinc-900/60 border border-white/20 rounded-full p-2 text-white hover:bg-zinc-700 transition-all duration-200 flex items-center"
+								on:click={() => speak(message.content)}
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M11 5v14m-7-7h14"
+									/>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 13V7a2 2 0 00-2-2H7a2 2 0 00-2 2v6"
+									/>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M15 19a3 3 0 01-6 0"
+									/>
+								</svg>
+							</button>
+						{/if}
 					</div>
 				</div>
 			{/each}
@@ -535,43 +577,42 @@
 	</div>
 </div>
 
-
 <style>
-    .container {
-        padding: 1rem;
-    }
-    
-    .debug-container {
-        margin-top: 1rem;
-        padding: 1rem;
-        background: #f5f5f5;
-        border-radius: 4px;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    .debug-log {
-        padding: 0.5rem;
-        border-bottom: 1px solid #ddd;
-        font-family: monospace;
-        white-space: pre-wrap;
-    }
-    
-    .debug-log.error {
-        color: red;
-        background: #fff0f0;
-    }
-    
-    .timestamp {
-        color: #666;
-        margin-right: 1rem;
-    }
-    
-    .error {
-        color: red;
-        padding: 0.5rem;
-        margin: 0.5rem 0;
-        background: #fff0f0;
-        border-radius: 4px;
-    }
+	.container {
+		padding: 1rem;
+	}
+
+	.debug-container {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: #f5f5f5;
+		border-radius: 4px;
+		max-height: 300px;
+		overflow-y: auto;
+	}
+
+	.debug-log {
+		padding: 0.5rem;
+		border-bottom: 1px solid #ddd;
+		font-family: monospace;
+		white-space: pre-wrap;
+	}
+
+	.debug-log.error {
+		color: red;
+		background: #fff0f0;
+	}
+
+	.timestamp {
+		color: #666;
+		margin-right: 1rem;
+	}
+
+	.error {
+		color: red;
+		padding: 0.5rem;
+		margin: 0.5rem 0;
+		background: #fff0f0;
+		border-radius: 4px;
+	}
 </style>
