@@ -4,8 +4,7 @@
 	import supabase from '$lib/supabase';
 	import groq from '$lib/groq';
 	import { page } from '$app/stores';
-	import { createRecorder } from '$lib/recorder';
-
+	import { createRecorder } from '$lib/recorder.svelte';
 	let messages = $state([]);
 	let newMessage = $state('');
 	let showDetails = $state(false);
@@ -422,7 +421,7 @@
 							>
 								{message.content}
 							</span>
-							<span class="text-xs text-zinc-400 ">
+							<span class="text-xs text-zinc-400">
 								{new Date(message.timestamp).toLocaleTimeString()}
 							</span>
 						</p>
